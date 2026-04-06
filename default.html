@@ -1102,8 +1102,6 @@ let trialEndTime = null;
 let trialTarget = 0;
 let comboTierNoticeTimeout = null;
 let lastComboLength = 2;
-let recentPromptHistory = [];
-let forceNextChar = null;
 let dailySequence = [];
 let dailyIndex = 0;
 let dailyCorrect = 0;
@@ -1653,77 +1651,41 @@ function getEligiblePool() {
     return pool;
 }
 
-function getRecentRepeatCount(char, history = recentPromptHistory) {
-    let count = 0;
-    for (let i = history.length - 1; i >= 0; i--) {
-        if (history[i] !== char) break;
-        count += 1;
-    }
-    return count;
-}
-
-function getKanaWeight(char, now = Date.now()) {
-    const st = getStats(char);
-    const sr = getSrs(char);
-    let weight = 1;
-
-    if (settings.focusWeak) {
-        weight += Math.max(0, st.wrong * 2 - st.correct);
-    }
-
-    if (settings.srs) {
-        const overdueMs = Math.max(0, now - sr.due);
-        const unseenMs = sr.lastSeen ? Math.max(0, now - sr.lastSeen) : 60000;
-        weight += Math.min(12, Math.floor(overdueMs / 5000));
-        weight += Math.max(0, 4 - sr.level);
-        weight += Math.min(6, Math.floor(unseenMs / 15000));
-        if (!sr.lastSeen) weight += 2;
-        if (sr.lastWrong && now - sr.lastWrong < 30000) weight += 5;
-    }
-
-    const repeatCount = getRecentRepeatCount(char);
-    if (repeatCount >= 1 && activeChars.length > 1) {
-        weight *= 0.35;
-    }
-
-    return Math.max(0.15, weight);
-}
-
-function weightedPick(pool, options = {}) {
+function weightedPick(pool) {
     if (pool.length === 0) return null;
     if (pool.length === 1) return pool[0];
 
-    const { allowForcedRepeat = false, localHistory = recentPromptHistory } = options;
     const now = Date.now();
-    let candidates = [...new Set(pool)];
+    const weighted = [];
 
-    const blocked = candidates.filter(ch => getRecentRepeatCount(ch, localHistory) >= 2);
-    if (blocked.length && candidates.length > blocked.length) {
-        candidates = candidates.filter(ch => getRecentRepeatCount(ch, localHistory) < 2);
+    for (const ch of pool) {
+        const st = getStats(ch);
+        const sr = getSrs(ch);
+        const avgTime = getAverageTime(ch);
+        let weight = 1;
+
+        if (settings.focusWeak) {
+            weight += Math.max(0, st.wrong * 2 - st.correct);
+        }
+
+        if (settings.srs) {
+            const overdueMs = Math.max(0, now - sr.due);
+            const unseenMs = sr.lastSeen ? Math.max(0, now - sr.lastSeen) : 60000;
+            const slowMs = Math.max(0, avgTime - 1200);
+
+            weight += Math.min(12, Math.floor(overdueMs / 5000));
+            weight += Math.max(0, 4 - sr.level);
+            weight += Math.min(6, Math.floor(unseenMs / 15000));
+            if (!sr.lastSeen) weight += 2;
+            if (sr.lastWrong && now - sr.lastWrong < 30000) weight += 5;
+            weight += Math.min(4, Math.floor(slowMs / 600));
+        }
+
+        weight = Math.max(1, weight);
+        for (let i = 0; i < weight; i++) weighted.push(ch);
     }
 
-    if (!allowForcedRepeat && forceNextChar && candidates.length > 1) {
-        candidates = candidates.filter(ch => ch !== forceNextChar);
-    }
-
-    let totalWeight = 0;
-    const weighted = candidates.map(ch => {
-        const weight = getKanaWeight(ch, now);
-        totalWeight += weight;
-        return { ch, weight };
-    });
-
-    if (totalWeight <= 0) {
-        return candidates[Math.floor(Math.random() * candidates.length)] || null;
-    }
-
-    let roll = Math.random() * totalWeight;
-    for (const entry of weighted) {
-        roll -= entry.weight;
-        if (roll <= 0) return entry.ch;
-    }
-
-    return weighted[weighted.length - 1]?.ch || null;
+    return weighted[Math.floor(Math.random() * weighted.length)];
 }
 
 function clearHint() {
@@ -1778,18 +1740,14 @@ function buildComboCharacters(pool, firstPick) {
         if (sameRowPool.length === 0) sameRowPool = [firstPick];
 
         while (chars.length < comboLength) {
-            const availablePool = sameRowPool.filter(ch => !chars.includes(ch));
-            const sourcePool = availablePool.length ? availablePool : sameRowPool;
-            const nextPick = sourcePool[Math.floor(Math.random() * sourcePool.length)] || firstPick;
+            const nextPick = sameRowPool[Math.floor(Math.random() * sameRowPool.length)] || firstPick;
             chars.push(nextPick);
         }
         return chars;
     }
 
     while (chars.length < comboLength) {
-        const availablePool = pool.filter(ch => !chars.includes(ch));
-        const sourcePool = availablePool.length ? availablePool : pool;
-        chars.push(weightedPick(sourcePool, { localHistory: chars }) || firstPick);
+        chars.push(weightedPick(pool) || firstPick);
     }
 
     return chars;
@@ -1858,24 +1816,12 @@ function nextCharacter() {
     ensureDataObjects();
 
     const pool = getEligiblePool();
-    const forcedCanRepeat = !!forceNextChar && getRecentRepeatCount(forceNextChar) < 2;
-    let firstPick = null;
-
-    if (forceNextChar && pool.includes(forceNextChar) && forcedCanRepeat) {
-        firstPick = forceNextChar;
-    }
-
-    firstPick = firstPick || weightedPick(pool, { allowForcedRepeat: forcedCanRepeat }) || activeChars[0] || "あ";
-    forceNextChar = null;
-
+    const firstPick = weightedPick(pool) || activeChars[0] || "あ";
     let displayValue = firstPick;
 
     if (settings.comboKana && activeChars.length > 0) {
         displayValue = buildComboCharacters(pool, firstPick).join("");
     }
-
-    recentPromptHistory.push(firstPick);
-    if (recentPromptHistory.length > 6) recentPromptHistory.shift();
 
     currentChar = displayValue;
     hiraganaEl.textContent = currentChar;
@@ -1925,8 +1871,6 @@ function startSession() {
     endlessRunTotal = 0;
     endlessRunWrong = 0;
     lastComboLength = getComboLength();
-    recentPromptHistory = [];
-    forceNextChar = null;
     hideComboTierNotice();
 
     if (isDailyChallengeSession()) {
@@ -1966,23 +1910,20 @@ function updateAverageTime(char, timeTaken) {
 
 function updateSrsCorrect(char) {
     const entry = srs[char] || { level: 0, due: 0, lastSeen: 0, lastWrong: 0 };
-    const now = Date.now();
     entry.level = Math.min(entry.level + 1, 8);
     const intervals = [3000, 8000, 15000, 30000, 60000, 120000, 300000, 600000, 1200000];
     const delay = intervals[entry.level] ?? 1200000;
-    entry.due = now + delay;
-    entry.lastSeen = now;
-    entry.lastWrong = 0;
+    entry.due = Date.now() + delay;
+    entry.lastSeen = Date.now();
     srs[char] = entry;
 }
 
 function updateSrsWrong(char) {
     const entry = srs[char] || { level: 0, due: 0, lastSeen: 0, lastWrong: 0 };
-    const now = Date.now();
     entry.level = 0;
-    entry.due = now + 2000;
-    entry.lastSeen = now;
-    entry.lastWrong = now;
+    entry.due = Date.now() + 2000;
+    entry.lastSeen = Date.now();
+    entry.lastWrong = Date.now();
     srs[char] = entry;
 }
 
@@ -2096,7 +2037,6 @@ function handleWrong() {
         hintEl.textContent = `Answer: ${correctAnswer}`;
         flashResult(false, () => nextCharacter());
     } else if (currentFlowModeIsContinuous()) {
-        if (!settings.comboKana && currentChar.length === 1) forceNextChar = currentChar;
         hintEl.textContent = `Answer: ${correctAnswer}`;
         flashResult(false, () => nextCharacter());
     } else {

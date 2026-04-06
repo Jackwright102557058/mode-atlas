@@ -1758,9 +1758,11 @@ function weightedPick(pool, options = {}) {
         if (settings.srs) {
             const overdueMs = Math.max(0, now - sr.due);
             const unseenMs = sr.lastSeen ? Math.max(0, now - sr.lastSeen) : 120000;
+            const avgTime = getAverageTime(ch);
             weight += Math.min(12, Math.floor(overdueMs / 5000));
             weight += Math.min(8, Math.floor(unseenMs / 15000));
             weight += Math.max(0, 4 - sr.level);
+            weight += Math.min(4, Math.max(0, Math.floor((avgTime - 1200) / 600)));
             if (sr.lastWrong && now - sr.lastWrong < 30000) weight += 5;
         }
 
