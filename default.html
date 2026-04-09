@@ -2599,7 +2599,8 @@ function makeExportPayload() {
         srs,
         scoreHistory,
         dailyChallengeHistory,
-        highScore
+        highScore,
+        testModeResults: loadJSON("testModeResults", [])
     };
 }
 
@@ -2675,6 +2676,7 @@ function applyImportedData(payload) {
     dailyChallengeHistory = payload.dailyChallengeHistory || {};
     highScore = Number(payload.highScore || 0);
     settings = { ...DEFAULT_SETTINGS, ...(payload.settings || settings) };
+    localStorage.setItem("testModeResults", JSON.stringify(Array.isArray(payload.testModeResults) ? payload.testModeResults : []));
 
     streak = 0;
     sessionStarted = false;
@@ -2748,6 +2750,7 @@ resetBtn.addEventListener("click", () => {
     localStorage.removeItem("scoreHistory");
     localStorage.removeItem("dailyChallengeHistory");
     localStorage.removeItem("highScore");
+    localStorage.removeItem("testModeResults");
 
     rebuildCharMap();
     ensureDataObjects();
