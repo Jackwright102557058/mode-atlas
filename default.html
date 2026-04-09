@@ -1227,6 +1227,10 @@ const scoresHeaderEl = document.getElementById("scoresHeader");
 const scoresContentEl = document.getElementById("scoresContent");
 const scoresChevronEl = document.getElementById("scoresChevron");
 const retryBtn = document.getElementById("retryBtn");
+
+function setRetryButtonVisible(visible) {
+    if (retryBtn) retryBtn.style.display = visible ? "inline-block" : "none";
+}
 const resetBtn = document.getElementById("resetBtn");
 const startBtn = document.getElementById("startBtn");
 const startWrap = document.getElementById("startWrap");
@@ -2111,6 +2115,10 @@ function flashResult(correct, onDone) {
     }, correct ? 260 : 420);
 }
 
+function isFinalTestQuestionCompleted() {
+    return isTestModeSession() && testIndex >= testSequence.length;
+}
+
 function currentFlowModeIsContinuous() {
     return settings.endless || settings.timeTrial || settings.testMode;
 }
@@ -2352,6 +2360,7 @@ function endTestMode() {
 
     saveTestModeResult();
 
+    locked = false;
     sessionStarted = false;
     sessionStats.active = false;
     stopTrialTimer();
@@ -2378,11 +2387,18 @@ function endTestMode() {
         </div>
     `).join("");
 
-    sessionHardList.style.display = "none";
-    sessionEasyList.style.display = "none";
-    const modalTitle = sessionModalBackdrop.querySelector("h2");
+    if (sessionHardList) {
+        sessionHardList.style.display = "none";
+        sessionHardList.innerHTML = "";
+    }
+    if (sessionEasyList) {
+        sessionEasyList.style.display = "none";
+        sessionEasyList.innerHTML = "";
+    }
+
+    const modalTitle = sessionModalBackdrop ? sessionModalBackdrop.querySelector("h2") : null;
     if (modalTitle) modalTitle.textContent = "Reading Test Complete";
-    sessionModalBackdrop.classList.add("open");
+    if (sessionModalBackdrop) sessionModalBackdrop.classList.add("open");
 
     updateTopStats();
     renderScoreHistory();
