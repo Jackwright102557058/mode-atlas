@@ -1425,15 +1425,9 @@ const ALL_BASE_KANA = [
 
 const ALL_DAKUTEN_KANA = Object.entries(DAKUTEN_ROWS).flatMap(([, row]) => Object.entries(row));
 
-const READING_TEST_RESULTS_STORAGE_KEY = "testModeResults";
-const READING_TEST_RESULTS_STORAGE_BACKUP_KEY = "kanaTrainerTestModeResults";
-const READING_TEST_RESULTS_UPDATED_AT_KEY = "testModeResultsUpdatedAt";
-const READING_TEST_RESULTS_ALT_STORAGE_KEY = "readingTestModeResults";
-const READING_TEST_RESULTS_ALT_STORAGE_BACKUP_KEY = "kanaTrainerReadingTestModeResults";
-const READING_TEST_RESULTS_ALT_UPDATED_AT_KEY = "readingTestModeResultsUpdatedAt";
-const WRITING_TEST_RESULTS_STORAGE_KEY = "writingTestModeResults";
-const WRITING_TEST_RESULTS_STORAGE_BACKUP_KEY = "kanaTrainerWritingTestModeResults";
-const WRITING_TEST_RESULTS_UPDATED_AT_KEY = "writingTestModeResultsUpdatedAt";
+const TEST_RESULTS_STORAGE_KEY = "testModeResults";
+const TEST_RESULTS_STORAGE_BACKUP_KEY = "kanaTrainerTestModeResults";
+const TEST_RESULTS_UPDATED_AT_KEY = "testModeResultsUpdatedAt";
 
 
 function loadJSON(key, fallback) {
@@ -1556,51 +1550,33 @@ function buildAverageResult(mode, tests) {
     };
 }
 
-function loadModeResultsFromKeys(keys, expectedMode) {
-    const mergedMap = new Map();
+function loadStoredResults() {
+    const primary = loadJSON(TEST_RESULTS_STORAGE_KEY, null);
+    const backup = loadJSON(TEST_RESULTS_STORAGE_BACKUP_KEY, null);
 
+    const mergedMap = new Map();
     const pushItems = (arr) => {
         if (!Array.isArray(arr)) return;
         arr.forEach(item => {
             const normalized = normalizeTestResult(item);
-            if (!normalized || normalized.mode !== expectedMode) return;
+            if (!normalized) return;
             const key = normalized.id || `${normalized.mode}-${normalized.date}-${normalized.startedAt}`;
             mergedMap.set(key, normalized);
         });
     };
 
-    keys.forEach(key => {
-        pushItems(loadJSON(key, null));
-    });
+    pushItems(primary);
+    pushItems(backup);
 
-    return Array.from(mergedMap.values());
-}
-
-function loadStoredResults() {
-    const readingTests = loadModeResultsFromKeys([
-        READING_TEST_RESULTS_STORAGE_KEY,
-        READING_TEST_RESULTS_STORAGE_BACKUP_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_BACKUP_KEY
-    ], "reading");
-    const writingTests = loadModeResultsFromKeys([
-        WRITING_TEST_RESULTS_STORAGE_KEY,
-        WRITING_TEST_RESULTS_STORAGE_BACKUP_KEY,
-        READING_TEST_RESULTS_STORAGE_KEY,
-        READING_TEST_RESULTS_STORAGE_BACKUP_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_BACKUP_KEY
-    ], "writing");
-
-    const tests = [...readingTests, ...writingTests].sort((a, b) => {
+    const tests = Array.from(mergedMap.values()).sort((a, b) => {
         const aTime = Date.parse(`${a.date || "1970-01-01"}T${a.startedAt || "00:00"}`) || 0;
         const bTime = Date.parse(`${b.date || "1970-01-01"}T${b.startedAt || "00:00"}`) || 0;
         return bTime - aTime;
     });
 
     const averages = [
-        buildAverageResult("reading", readingTests),
-        buildAverageResult("writing", writingTests)
+        buildAverageResult("reading", tests),
+        buildAverageResult("writing", tests)
     ].filter(Boolean);
 
     return [...averages, ...tests];
@@ -1611,124 +1587,31 @@ let STORED_RESULTS = loadStoredResults();
 let selectedResultId = STORED_RESULTS[0]?.id || null;
 let selectedKana = null;
 
-
-let DEBUG_PANEL = null;
-
-function ensureDebugPanel() {
-    if (DEBUG_PANEL) return DEBUG_PANEL;
-
-    DEBUG_PANEL = document.createElement("div");
-    DEBUG_PANEL.id = "storageDebugPanel";
-    DEBUG_PANEL.style.position = "fixed";
-    DEBUG_PANEL.style.right = "16px";
-    DEBUG_PANEL.style.bottom = "16px";
-    DEBUG_PANEL.style.zIndex = "9999";
-    DEBUG_PANEL.style.width = "min(360px, calc(100vw - 32px))";
-    DEBUG_PANEL.style.maxHeight = "42vh";
-    DEBUG_PANEL.style.overflow = "auto";
-    DEBUG_PANEL.style.padding = "14px";
-    DEBUG_PANEL.style.borderRadius = "16px";
-    DEBUG_PANEL.style.background = "rgba(12,12,12,0.96)";
-    DEBUG_PANEL.style.border = "1px solid rgba(255,255,255,0.12)";
-    DEBUG_PANEL.style.boxShadow = "0 16px 40px rgba(0,0,0,0.45)";
-    DEBUG_PANEL.style.fontFamily = "Arial, sans-serif";
-    DEBUG_PANEL.style.fontSize = "12px";
-    DEBUG_PANEL.style.lineHeight = "1.45";
-    DEBUG_PANEL.style.color = "#f3f3f3";
-    document.body.appendChild(DEBUG_PANEL);
-    return DEBUG_PANEL;
-}
-
-function getStorageDebugSnapshot() {
-    const readingKeys = [
-        READING_TEST_RESULTS_STORAGE_KEY,
-        READING_TEST_RESULTS_STORAGE_BACKUP_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_BACKUP_KEY
-    ];
-    const writingKeys = [
-        WRITING_TEST_RESULTS_STORAGE_KEY,
-        WRITING_TEST_RESULTS_STORAGE_BACKUP_KEY
-    ];
-
-    const keyInfo = [...new Set([...readingKeys, ...writingKeys])].map(key => {
-        const raw = localStorage.getItem(key);
-        let parsed = null;
-        let count = 0;
-        let error = "";
-        if (raw) {
-            try {
-                parsed = JSON.parse(raw);
-                count = Array.isArray(parsed) ? parsed.length : 0;
-            } catch (err) {
-                error = err && err.message ? err.message : "Invalid JSON";
-            }
-        }
-        return {
-            key,
-            present: raw !== null,
-            count,
-            rawLength: raw ? raw.length : 0,
-            error
-        };
-    });
-
-    const readingResults = loadModeResultsFromKeys(readingKeys, "reading");
-    const writingResults = loadModeResultsFromKeys([
-        ...writingKeys,
-        READING_TEST_RESULTS_STORAGE_KEY,
-        READING_TEST_RESULTS_STORAGE_BACKUP_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_BACKUP_KEY
-    ], "writing");
-
-    return {
-        href: window.location.href,
-        readingCount: readingResults.length,
-        writingCount: writingResults.length,
-        readingFirst: readingResults[0] ? `${readingResults[0].id} | ${readingResults[0].title}` : "—",
-        writingFirst: writingResults[0] ? `${writingResults[0].id} | ${writingResults[0].title}` : "—",
-        selectedResultId: selectedResultId || "—",
-        keys: keyInfo
-    };
-}
-
-function renderDebugPanel() {
-    const panel = ensureDebugPanel();
-    const snapshot = getStorageDebugSnapshot();
-    panel.innerHTML = `
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">
-            <div style="font-size:13px;font-weight:800;letter-spacing:0.04em;">Storage Debug</div>
-            <button type="button" id="storageDebugRefreshBtn" style="border:1px solid rgba(255,255,255,0.14);background:#1f1f1f;color:#f3f3f3;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px;">Refresh</button>
-        </div>
-        <div style="display:grid;gap:8px;">
-            <div><strong>Page:</strong> <span style="color:#bfbfbf;word-break:break-all;">${snapshot.href}</span></div>
-            <div><strong>Reading results found:</strong> ${snapshot.readingCount}</div>
-            <div><strong>Writing results found:</strong> ${snapshot.writingCount}</div>
-            <div><strong>First Reading result:</strong> <span style="color:#bfbfbf;word-break:break-word;">${snapshot.readingFirst}</span></div>
-            <div><strong>First Writing result:</strong> <span style="color:#bfbfbf;word-break:break-word;">${snapshot.writingFirst}</span></div>
-            <div><strong>Selected result:</strong> <span style="color:#bfbfbf;word-break:break-word;">${snapshot.selectedResultId}</span></div>
-            <div style="margin-top:4px;font-weight:700;">Tracked storage keys</div>
-            <div style="display:grid;gap:6px;">
-                ${snapshot.keys.map(item => `
-                    <div style="padding:8px 9px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-                        <div style="font-weight:700;word-break:break-all;">${item.key}</div>
-                        <div style="color:#bfbfbf;">Present: ${item.present ? "yes" : "no"} · Items: ${item.count} · Raw length: ${item.rawLength}</div>
-                        ${item.error ? `<div style="color:#ff9b9b;">Parse error: ${item.error}</div>` : ""}
-                    </div>
-                `).join("")}
-            </div>
-        </div>
-    `;
-    panel.querySelector("#storageDebugRefreshBtn")?.addEventListener("click", () => {
-        STORED_RESULTS = loadStoredResults();
-        if (!STORED_RESULTS.find(item => item.id === selectedResultId)) {
-            selectedResultId = STORED_RESULTS[0]?.id || null;
-            selectedKana = null;
-        }
-        renderAll();
-    });
-}
+const HERO_STORED_TESTS = document.getElementById("heroStoredTests");
+const HERO_BEST_SCORE = document.getElementById("heroBestScore");
+const TESTS_GRID = document.getElementById("testsGrid");
+const OVERALL_SCORE_CARD = document.getElementById("overallScoreCard");
+const OVERALL_KICKER = document.getElementById("overallKicker");
+const OVERALL_SELECTED_NAME = document.getElementById("overallSelectedName");
+const OVERALL_SCORE = document.getElementById("overallScore");
+const OVERALL_SUB = document.getElementById("overallSub");
+const OVERALL_MODE = document.getElementById("overallMode");
+const OVERALL_CORRECT = document.getElementById("overallCorrect");
+const OVERALL_WRONG = document.getElementById("overallWrong");
+const OVERALL_TIME = document.getElementById("overallTime");
+const SNAPSHOT_BREAKDOWN = document.getElementById("snapshotBreakdown");
+const ROW_PERFORMANCE_MOUNT = document.getElementById("rowPerformanceMount");
+const DETAIL_TITLE = document.getElementById("detailTitle");
+const DETAIL_SUB = document.getElementById("detailSub");
+const DETAIL_METRICS = document.getElementById("detailMetrics");
+const TEST_HEATMAP = document.getElementById("testHeatmap");
+const KANA_MODAL_BACKDROP = document.getElementById("kanaModalBackdrop");
+const KANA_MODAL_CLOSE = document.getElementById("kanaModalClose");
+const KANA_MODAL_TITLE = document.getElementById("kanaModalTitle");
+const KANA_MODAL_SUB = document.getElementById("kanaModalSub");
+const KANA_MODAL_CHAR = document.getElementById("kanaModalChar");
+const KANA_MODAL_ROMAJI = document.getElementById("kanaModalRomaji");
+const KANA_MODAL_STATS = document.getElementById("kanaModalStats");
 
 function summaryRow(label, value, extra = "") {
     return `
@@ -1761,9 +1644,11 @@ function getHeatColor(record) {
 }
 
 function renderHero() {
-    HERO_STORED_TESTS.textContent = STORED_RESULTS.filter(item => item.type !== "average").length;
-    const best = STORED_RESULTS.length ? STORED_RESULTS.reduce((max, item) => Math.max(max, item.overallScore || 0), 0) : 0;
-    HERO_BEST_SCORE.textContent = STORED_RESULTS.length ? `${best}%` : "—";
+    const testsOnly = STORED_RESULTS.filter(item => item.type !== "average");
+    const best = testsOnly.length ? testsOnly.reduce((max, item) => Math.max(max, Number(item.overallScore || 0)), 0) : 0;
+
+    if (HERO_STORED_TESTS) HERO_STORED_TESTS.textContent = String(testsOnly.length);
+    if (HERO_BEST_SCORE) HERO_BEST_SCORE.textContent = testsOnly.length ? `${best}%` : "—";
 }
 
 function renderResultsList() {
@@ -2110,34 +1995,14 @@ KANA_MODAL_BACKDROP.addEventListener("click", (e) => {
 
 renderAll();
 // ensure charts render
-setTimeout(() => drawRowCharts(getSelectedResult()), 50);
+setTimeout(() => { const selected = getSelectedResult(); if (selected) drawRowCharts(selected); }, 50);
 
 window.addEventListener("focus", renderAll);
 document.addEventListener("visibilitychange", () => {
     if (!document.hidden) renderAll();
 });
 window.addEventListener("storage", (event) => {
-    const watchedKeys = new Set([
-        READING_TEST_RESULTS_STORAGE_KEY,
-        READING_TEST_RESULTS_STORAGE_BACKUP_KEY,
-        READING_TEST_RESULTS_UPDATED_AT_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_KEY,
-        READING_TEST_RESULTS_ALT_STORAGE_BACKUP_KEY,
-        READING_TEST_RESULTS_ALT_UPDATED_AT_KEY,
-        WRITING_TEST_RESULTS_STORAGE_KEY,
-        WRITING_TEST_RESULTS_STORAGE_BACKUP_KEY,
-        WRITING_TEST_RESULTS_UPDATED_AT_KEY,
-        "testModeResults",
-        "kanaTrainerTestModeResults",
-        "testModeResultsUpdatedAt",
-        "readingTestModeResults",
-        "kanaTrainerReadingTestModeResults",
-        "readingTestModeResultsUpdatedAt",
-        "writingTestModeResults",
-        "kanaTrainerWritingTestModeResults",
-        "writingTestModeResultsUpdatedAt"
-    ]);
-    if (!event.key || watchedKeys.has(event.key)) {
+    if (!event.key || event.key === TEST_RESULTS_STORAGE_KEY || event.key === TEST_RESULTS_STORAGE_BACKUP_KEY || event.key === TEST_RESULTS_UPDATED_AT_KEY || event.key === "testModeResults" || event.key === "kanaTrainerTestModeResults" || event.key === "testModeResultsUpdatedAt") {
         renderAll();
     }
 });
