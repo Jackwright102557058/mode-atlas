@@ -1759,22 +1759,7 @@ function renderHeatmap(result) {
     });
 }
 
-function refreshStoredResults() {
-    STORED_RESULTS = loadStoredResults();
-    if (!STORED_RESULTS.length) {
-        selectedResultId = null;
-        selectedKana = null;
-        return;
-    }
-
-    if (!selectedResultId || !STORED_RESULTS.some(item => item.id === selectedResultId)) {
-        selectedResultId = STORED_RESULTS[0].id;
-        selectedKana = null;
-    }
-}
-
 function renderAll() {
-    refreshStoredResults();
     const result = getSelectedResult();
     renderHero();
     renderResultsList();
@@ -1943,9 +1928,24 @@ function drawRowCharts(result) {
     drawSet(perf.katakana, "k", perf.katakanaBest, perf.katakanaWorst);
 }
 
+KANA_MODAL_CLOSE.addEventListener("click", closeKanaModal);
+KANA_MODAL_BACKDROP.addEventListener("click", (e) => {
+    if (e.target === KANA_MODAL_BACKDROP) closeKanaModal();
+});
+
 renderAll();
 // ensure charts render
-setTimeout(()=>drawRowCharts(getSelectedResult()),50);
+setTimeout(() => drawRowCharts(getSelectedResult()), 50);
+
+window.addEventListener("focus", renderAll);
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) renderAll();
+});
+window.addEventListener("storage", (event) => {
+    if (!event.key || event.key === "testModeResults" || event.key === "testModeResultsUpdatedAt") {
+        renderAll();
+    }
+});
 </script>
 </body>
 </html>
