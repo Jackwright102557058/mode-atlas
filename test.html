@@ -1787,6 +1787,11 @@ function renderHeatmap(result) {
 }
 
 function renderAll() {
+    STORED_RESULTS = loadStoredResults();
+    if (!STORED_RESULTS.some(item => item.id === selectedResultId)) {
+        selectedResultId = STORED_RESULTS[0]?.id || null;
+        selectedKana = null;
+    }
     const result = getSelectedResult();
     renderHero();
     renderResultsList();
