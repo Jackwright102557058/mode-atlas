@@ -1555,9 +1555,9 @@ function loadStoredResults() {
     return [...averages, ...tests];
 }
 
-const SAMPLE_RESULTS = loadStoredResults();
+let STORED_RESULTS = loadStoredResults();
 
-let selectedResultId = SAMPLE_RESULTS[0]?.id || null;
+let selectedResultId = STORED_RESULTS[0]?.id || null;
 let selectedKana = null;
 
 function summaryRow(label, value, extra = "") {
@@ -1582,7 +1582,7 @@ function detailMetric(label, value) {
 }
 
 function getSelectedResult() {
-    return SAMPLE_RESULTS.find(item => item.id === selectedResultId) || null;
+    return STORED_RESULTS.find(item => item.id === selectedResultId) || null;
 }
 
 function getHeatColor(record) {
@@ -1591,17 +1591,17 @@ function getHeatColor(record) {
 }
 
 function renderHero() {
-    HERO_STORED_TESTS.textContent = SAMPLE_RESULTS.filter(item => item.type !== "average").length;
-    const best = SAMPLE_RESULTS.length ? SAMPLE_RESULTS.reduce((max, item) => Math.max(max, item.overallScore || 0), 0) : 0;
-    HERO_BEST_SCORE.textContent = SAMPLE_RESULTS.length ? `${best}%` : "—";
+    HERO_STORED_TESTS.textContent = STORED_RESULTS.filter(item => item.type !== "average").length;
+    const best = STORED_RESULTS.length ? STORED_RESULTS.reduce((max, item) => Math.max(max, item.overallScore || 0), 0) : 0;
+    HERO_BEST_SCORE.textContent = STORED_RESULTS.length ? `${best}%` : "—";
 }
 
 function renderResultsList() {
-    if (!SAMPLE_RESULTS.length) {
+    if (!STORED_RESULTS.length) {
         TESTS_GRID.innerHTML = `<div class="empty">No test results yet. Complete a test in Reading Practice or Writing Practice and it will appear here.</div>`;
         return;
     }
-    TESTS_GRID.innerHTML = SAMPLE_RESULTS.map(item => `
+    TESTS_GRID.innerHTML = STORED_RESULTS.map(item => `
         <button class="test-tile ${item.mode} ${item.type === "average" ? "average" : ""} ${item.id === selectedResultId ? "active" : ""}" data-result-id="${item.id}" type="button">
             <div class="test-tile-top">
                 <div>
@@ -1622,14 +1622,7 @@ function renderResultsList() {
         button.addEventListener("click", () => {
             selectedResultId = button.dataset.resultId;
             selectedKana = null;
-            
-KANA_MODAL_CLOSE.addEventListener("click", closeKanaModal);
-KANA_MODAL_BACKDROP.addEventListener("click", (e) => {
-    if (e.target === KANA_MODAL_BACKDROP) closeKanaModal();
-});
-
-
-renderAll();
+            renderAll();
         });
     });
 }
@@ -1766,7 +1759,22 @@ function renderHeatmap(result) {
     });
 }
 
+function refreshStoredResults() {
+    STORED_RESULTS = loadStoredResults();
+    if (!STORED_RESULTS.length) {
+        selectedResultId = null;
+        selectedKana = null;
+        return;
+    }
+
+    if (!selectedResultId || !STORED_RESULTS.some(item => item.id === selectedResultId)) {
+        selectedResultId = STORED_RESULTS[0].id;
+        selectedKana = null;
+    }
+}
+
 function renderAll() {
+    refreshStoredResults();
     const result = getSelectedResult();
     renderHero();
     renderResultsList();
