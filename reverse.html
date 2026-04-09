@@ -2357,6 +2357,14 @@ function flashResult(correct, onDone) {
     }, correct ? 260 : 420);
 }
 
+function advanceTestModeAfterAnswer() {
+    if (testIndex >= testSequence.length) {
+        endTestMode();
+        return;
+    }
+    nextCharacter();
+}
+
 function currentFlowModeIsContinuous() {
     return settings.endless || settings.timeTrial || settings.testMode;
 }
@@ -2405,8 +2413,8 @@ function handleCorrect() {
     renderScoreHistory();
     saveAll();
 
-    if (isFinalTestQuestionCompleted()) {
-        flashResult(true, () => endTestMode());
+    if (isTestModeSession()) {
+        flashResult(true, () => advanceTestModeAfterAnswer());
         return;
     }
 
@@ -2972,7 +2980,8 @@ function makeExportPayload() {
         scoreHistory,
         dailyChallengeHistory,
         highScore,
-        testModeResults: loadJSON("testModeResults", [])
+        testModeResults: loadJSON("testModeResults", []),
+        testModeResultsUpdatedAt: localStorage.getItem("testModeResultsUpdatedAt") || ""
     };
 }
 
@@ -3025,7 +3034,9 @@ function applyImportedData(payload) {
     dailyChallengeHistory = payload.dailyChallengeHistory || {};
     highScore = Number(payload.highScore || 0);
     settings = { ...DEFAULT_SETTINGS, ...(payload.settings || settings) };
-    localStorage.setItem("testModeResults", JSON.stringify(Array.isArray(payload.testModeResults) ? payload.testModeResults : []));
+
+    const importedTestModeResults = Array.isArray(payload.testModeResults) ? payload.testModeResults : [];
+    localStorage.setItem("testModeResults", JSON.stringify(importedTestModeResults));
     localStorage.setItem("testModeResultsUpdatedAt", String(Date.now()));
 
     streak = 0;
@@ -3176,8 +3187,6 @@ resetBtn.addEventListener("click", () => {
     localStorage.removeItem("reverseScoreHistory");
     localStorage.removeItem("reverseDailyChallengeHistory");
     localStorage.removeItem("reverseHighScore");
-    localStorage.removeItem("testModeResults");
-    localStorage.removeItem("testModeResultsUpdatedAt");
 
     rebuildCharMap();
     ensureDataObjects();
