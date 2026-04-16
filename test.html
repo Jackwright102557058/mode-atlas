@@ -1206,6 +1206,36 @@
         border: 1px solid rgba(203,163,74,0.34);
     }
 
+    .row-doughnut-card.off {
+        opacity: 0.68;
+    }
+
+    .row-view-toggle-btn {
+        appearance: none;
+        border: 1px solid rgba(203,163,74,0.28);
+        background: rgba(203,163,74,0.12);
+        color: #ffe2a6;
+        border-radius: 12px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.2;
+        white-space: nowrap;
+        transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .row-view-toggle-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(203,163,74,0.44);
+        background: rgba(203,163,74,0.18);
+        box-shadow: 0 0 0 1px rgba(203,163,74,0.12);
+    }
+
+    .row-view-toggle-btn:active {
+        transform: translateY(0);
+    }
+
 </style>
 </head>
 <body>
@@ -1418,15 +1448,77 @@ const ROW_GROUPS = [
     { script: "katakana", key: "ワ", chars: [...Object.keys(KATAKANA_ROWS.k_wa)] }
 ];
 
+const YOON_ROWS = {
+    h_kya: {"きゃ":"kya","きゅ":"kyu","きょ":"kyo"},
+    h_sha: {"しゃ":"sha","しゅ":"shu","しょ":"sho"},
+    h_cha: {"ちゃ":"cha","ちゅ":"chu","ちょ":"cho"},
+    h_nya: {"にゃ":"nya","にゅ":"nyu","にょ":"nyo"},
+    h_hya: {"ひゃ":"hya","ひゅ":"hyu","ひょ":"hyo"},
+    h_mya: {"みゃ":"mya","みゅ":"myu","みょ":"myo"},
+    h_rya: {"りゃ":"rya","りゅ":"ryu","りょ":"ryo"},
+    h_gya: {"ぎゃ":"gya","ぎゅ":"gyu","ぎょ":"gyo"},
+    h_ja: {"じゃ":"ja","じゅ":"ju","じょ":"jo"},
+    h_bya: {"びゃ":"bya","びゅ":"byu","びょ":"byo"},
+    h_pya: {"ぴゃ":"pya","ぴゅ":"pyu","ぴょ":"pyo"},
+    k_kya: {"キャ":"kya","キュ":"kyu","キョ":"kyo"},
+    k_sha: {"シャ":"sha","シュ":"shu","ショ":"sho"},
+    k_cha: {"チャ":"cha","チュ":"chu","チョ":"cho"},
+    k_nya: {"ニャ":"nya","ニュ":"nyu","ニョ":"nyo"},
+    k_hya: {"ヒャ":"hya","ヒュ":"hyu","ヒョ":"hyo"},
+    k_mya: {"ミャ":"mya","ミュ":"myu","ミョ":"myo"},
+    k_rya: {"リャ":"rya","リュ":"ryu","リョ":"ryo"},
+    k_gya: {"ギャ":"gya","ギュ":"gyu","ギョ":"gyo"},
+    k_ja: {"ジャ":"ja","ジュ":"ju","ジョ":"jo"},
+    k_bya: {"ビャ":"bya","ビュ":"byu","ビョ":"byo"},
+    k_pya: {"ピャ":"pya","ピュ":"pyu","ピョ":"pyo"}
+};
+
+const EXTENDED_KATAKANA_ROWS = {
+    ek_v: {"ヴァ":"va","ヴィ":"vi","ヴ":"vu","ヴェ":"ve","ヴォ":"vo"},
+    ek_t: {"ティ":"ti","ディ":"di","トゥ":"tu","ドゥ":"du"},
+    ek_f: {"ファ":"fa","フィ":"fi","フェ":"fe","フォ":"fo"},
+    ek_w: {"ウィ":"wi","ウェ":"we","ウォ":"wo"},
+    ek_sh: {"シェ":"she","ジェ":"je","チェ":"che"},
+    ek_ts: {"ツァ":"tsa","ツィ":"tsi","ツェ":"tse","ツォ":"tso"}
+};
+
 const MODIFIER_ROW_GROUPS = [
-    { script: "hiragana", key: "が", chars: [...Object.keys(DAKUTEN_ROWS.h_ka)] },
-    { script: "hiragana", key: "ざ", chars: [...Object.keys(DAKUTEN_ROWS.h_sa)] },
-    { script: "hiragana", key: "だ", chars: [...Object.keys(DAKUTEN_ROWS.h_ta)] },
-    { script: "hiragana", key: "ば/ぱ", chars: [...Object.keys(DAKUTEN_ROWS.h_ha)] },
-    { script: "katakana", key: "ガ", chars: [...Object.keys(DAKUTEN_ROWS.k_ka)] },
-    { script: "katakana", key: "ザ", chars: [...Object.keys(DAKUTEN_ROWS.k_sa)] },
-    { script: "katakana", key: "ダ", chars: [...Object.keys(DAKUTEN_ROWS.k_ta)] },
-    { script: "katakana", key: "バ/パ", chars: [...Object.keys(DAKUTEN_ROWS.k_ha)] }
+    { script: "hiragana", key: "が", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.h_ka)] },
+    { script: "hiragana", key: "ざ", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.h_sa)] },
+    { script: "hiragana", key: "だ", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.h_ta)] },
+    { script: "hiragana", key: "ば/ぱ", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.h_ha)] },
+    { script: "hiragana", key: "きゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_kya)] },
+    { script: "hiragana", key: "しゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_sha)] },
+    { script: "hiragana", key: "ちゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_cha)] },
+    { script: "hiragana", key: "にゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_nya)] },
+    { script: "hiragana", key: "ひゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_hya)] },
+    { script: "hiragana", key: "みゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_mya)] },
+    { script: "hiragana", key: "りゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_rya)] },
+    { script: "hiragana", key: "ぎゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_gya)] },
+    { script: "hiragana", key: "じゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_ja)] },
+    { script: "hiragana", key: "びゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_bya)] },
+    { script: "hiragana", key: "ぴゃ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.h_pya)] },
+    { script: "katakana", key: "ガ", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.k_ka)] },
+    { script: "katakana", key: "ザ", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.k_sa)] },
+    { script: "katakana", key: "ダ", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.k_ta)] },
+    { script: "katakana", key: "バ/パ", modifierType: "dakuten", chars: [...Object.keys(DAKUTEN_ROWS.k_ha)] },
+    { script: "katakana", key: "キャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_kya)] },
+    { script: "katakana", key: "シャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_sha)] },
+    { script: "katakana", key: "チャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_cha)] },
+    { script: "katakana", key: "ニャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_nya)] },
+    { script: "katakana", key: "ヒャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_hya)] },
+    { script: "katakana", key: "ミャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_mya)] },
+    { script: "katakana", key: "リャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_rya)] },
+    { script: "katakana", key: "ギャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_gya)] },
+    { script: "katakana", key: "ジャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_ja)] },
+    { script: "katakana", key: "ビャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_bya)] },
+    { script: "katakana", key: "ピャ", modifierType: "yoon", chars: [...Object.keys(YOON_ROWS.k_pya)] },
+    { script: "katakana", key: "ヴ", modifierType: "extended", chars: [...Object.keys(EXTENDED_KATAKANA_ROWS.ek_v)] },
+    { script: "katakana", key: "ティ/ディ", modifierType: "extended", chars: [...Object.keys(EXTENDED_KATAKANA_ROWS.ek_t)] },
+    { script: "katakana", key: "ファ", modifierType: "extended", chars: [...Object.keys(EXTENDED_KATAKANA_ROWS.ek_f)] },
+    { script: "katakana", key: "ウィ", modifierType: "extended", chars: [...Object.keys(EXTENDED_KATAKANA_ROWS.ek_w)] },
+    { script: "katakana", key: "シェ/ジェ/チェ", modifierType: "extended", chars: [...Object.keys(EXTENDED_KATAKANA_ROWS.ek_sh)] },
+    { script: "katakana", key: "ツァ", modifierType: "extended", chars: [...Object.keys(EXTENDED_KATAKANA_ROWS.ek_ts)] }
 ];
 
 function computeGroupedRowPerformance(result, groups, includeEmpty = false) {
@@ -1442,6 +1534,13 @@ function computeGroupedRowPerformance(result, groups, includeEmpty = false) {
             ? Math.round(items.reduce((sum, item) => sum + (item.avgMs || 0), 0) / items.length)
             : 0;
         const accuracy = total ? Math.round((correct / total) * 100) : 0;
+        const modifierEnabled = !row.modifierType
+            ? true
+            : row.modifierType === "dakuten"
+                ? !!result.dakuten
+                : row.modifierType === "yoon"
+                    ? !!result.yoon
+                    : !!result.extendedKatakana;
 
         return {
             script: row.script,
@@ -1451,7 +1550,8 @@ function computeGroupedRowPerformance(result, groups, includeEmpty = false) {
             total,
             accuracy,
             avgMs,
-            isOff: total === 0,
+            modifierType: row.modifierType || null,
+            isOff: includeEmpty && row.modifierType ? !modifierEnabled : total === 0,
             score: total ? (accuracy - (avgMs / 1000) * 4) : -Infinity
         };
     }).filter(row => includeEmpty || row.total > 0);
@@ -1522,28 +1622,6 @@ function getRowCellExtremes(result) {
     return map;
 }
 
-function ensureRowPerformanceControls() {
-    let controls = document.getElementById("rowPerformanceControls");
-    if (!controls) {
-        controls = document.createElement("div");
-        controls.id = "rowPerformanceControls";
-        controls.style.marginBottom = "10px";
-        ROW_PERFORMANCE_MOUNT.parentNode.insertBefore(controls, ROW_PERFORMANCE_MOUNT);
-    }
-    return controls;
-}
-
-function renderRowPerformanceControls() {
-    const controls = ensureRowPerformanceControls();
-    const isModifierView = rowGraphView === "modifier";
-    controls.innerHTML = `
-        <div class="row-performance-head" style="margin-bottom:4px; padding:0 2px;">
-            <span>${isModifierView ? "Modifier rows" : "Regular rows"}</span>
-            <button class="btn" id="rowViewToggleBtn" type="button">${isModifierView ? "Show Regular Rows" : "Show Modifier Rows"}</button>
-        </div>
-    `;
-}
-
 function renderRowPerformance(result) {
     const isModifierView = rowGraphView === "modifier";
     const perf = isModifierView ? computeModifierRowPerformance(result) : computeRowPerformance(result);
@@ -1577,6 +1655,10 @@ function renderRowPerformance(result) {
 
     return `
         <div class="row-performance">
+            <div class="row-performance-head" style="margin-bottom:4px;">
+                <span>${isModifierView ? "Modifier rows" : "Regular rows"}</span>
+                <button class="row-view-toggle-btn" type="button" data-row-view-toggle>${isModifierView ? "Show Regular Rows" : "Show Modifier Rows"}</button>
+            </div>
             <div class="row-tooltip-overlay" id="rowTooltipOverlay">
                 <div class="row-tooltip-card" id="rowTooltipCard">
                     <div class="title">Row details</div>
@@ -1662,6 +1744,8 @@ function normalizeTestResult(result) {
         durationMs,
         avgMs,
         dakuten: !!result.dakuten,
+        yoon: !!result.yoon,
+        extendedKatakana: !!(result.extendedKatakana || result.extKatakana || result.extended_katakana),
         kanaAsked: Number(result.kanaAsked || total || Object.keys(kana).length || 0),
         notes: String(result.notes || ""),
         inputMode: String(result.inputMode || ""),
@@ -1742,6 +1826,8 @@ function buildAverageResult(mode, tests) {
         durationMs: avgMs * Object.keys(kana).length,
         avgMs,
         dakuten: filtered.some(test => test.dakuten),
+        yoon: filtered.some(test => test.yoon),
+        extendedKatakana: filtered.some(test => test.extendedKatakana),
         kanaAsked: Object.keys(kana).length,
         notes: `Average view across all saved ${mode} tests.`,
         breakdown: {
@@ -2143,7 +2229,6 @@ function renderSnapshot(result) {
         OVERALL_SCORE_CARD.classList.add("writing");
     }
 
-    renderRowPerformanceControls();
     ROW_PERFORMANCE_MOUNT.innerHTML = renderRowPerformance(result);
 
     SNAPSHOT_BREAKDOWN.innerHTML = [
@@ -2351,8 +2436,6 @@ function renderAll() {
                 </div>
             `
         ].join("");
-        const rowControls = document.getElementById("rowPerformanceControls");
-        if (rowControls) rowControls.innerHTML = "";
         ROW_PERFORMANCE_MOUNT.innerHTML = "";
         DETAIL_TITLE.textContent = "No result selected";
         DETAIL_SUB.textContent = "Complete a test to populate this page.";
@@ -2486,15 +2569,13 @@ function drawRowCharts(result) {
     drawSet(perf.katakana, isModifierView ? "mk" : "k", perf.katakanaBest, perf.katakanaWorst);
 }
 
-document.addEventListener("click", (event) => {
-    const toggleBtn = event.target.closest("#rowViewToggleBtn");
+ROW_PERFORMANCE_MOUNT.addEventListener("click", (event) => {
+    const toggleBtn = event.target.closest("[data-row-view-toggle]");
     if (!toggleBtn) return;
-    event.preventDefault();
     event.stopPropagation();
     rowGraphView = rowGraphView === "regular" ? "modifier" : "regular";
     const selected = getSelectedResult();
     if (!selected) return;
-    renderRowPerformanceControls();
     ROW_PERFORMANCE_MOUNT.innerHTML = renderRowPerformance(selected);
     drawRowCharts(selected);
     bindRowInteractions(selected);
