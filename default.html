@@ -349,9 +349,18 @@
         justify-content: center;
         align-items: center;
         font-size: 22px;
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
         cursor: pointer;
         user-select: none;
         border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .cell.combo {
+        font-size: 16px;
+        letter-spacing: -0.04em;
+        padding: 2px;
     }
 
     .cell:hover { outline: 2px solid rgba(103,215,139,0.24); }
@@ -1045,6 +1054,60 @@ const dakutenRows = {
     }
 };
 
+const yoonRows = {
+    h_ka: {"きゃ":"kya","きゅ":"kyu","きょ":"kyo"},
+    h_sa: {"しゃ":"sha","しゅ":"shu","しょ":"sho"},
+    h_ta: {"ちゃ":"cha","ちゅ":"chu","ちょ":"cho"},
+    h_na: {"にゃ":"nya","にゅ":"nyu","にょ":"nyo"},
+    h_ha: {
+        "ひゃ":"hya","ひゅ":"hyu","ひょ":"hyo",
+        "びゃ":"bya","びゅ":"byu","びょ":"byo",
+        "ぴゃ":"pya","ぴゅ":"pyu","ぴょ":"pyo"
+    },
+    h_ma: {"みゃ":"mya","みゅ":"myu","みょ":"myo"},
+    h_ra: {"りゃ":"rya","りゅ":"ryu","りょ":"ryo"},
+    h_ka_dakuten: {"ぎゃ":"gya","ぎゅ":"gyu","ぎょ":"gyo"},
+    h_sa_dakuten: {"じゃ":"ja","じゅ":"ju","じょ":"jo"},
+    h_ta_dakuten: {"ぢゃ":"ja","ぢゅ":"ju","ぢょ":"jo"},
+    k_ka: {"キャ":"kya","キュ":"kyu","キョ":"kyo"},
+    k_sa: {"シャ":"sha","シュ":"shu","ショ":"sho"},
+    k_ta: {"チャ":"cha","チュ":"chu","チョ":"cho"},
+    k_na: {"ニャ":"nya","ニュ":"nyu","ニョ":"nyo"},
+    k_ha: {
+        "ヒャ":"hya","ヒュ":"hyu","ヒョ":"hyo",
+        "ビャ":"bya","ビュ":"byu","ビョ":"byo",
+        "ピャ":"pya","ピュ":"pyu","ピョ":"pyo"
+    },
+    k_ma: {"ミャ":"mya","ミュ":"myu","ミョ":"myo"},
+    k_ra: {"リャ":"rya","リュ":"ryu","リョ":"ryo"},
+    k_ka_dakuten: {"ギャ":"gya","ギュ":"gyu","ギョ":"gyo"},
+    k_sa_dakuten: {"ジャ":"ja","ジュ":"ju","ジョ":"jo"},
+    k_ta_dakuten: {"ヂャ":"ja","ヂュ":"ju","ヂョ":"jo"}
+};
+
+const extendedKatakanaRows = {
+    k_a: {
+        "イェ":"ye",
+        "ウィ":"wi","ウェ":"we","ウォ":"wo"
+    },
+    k_sa: {
+        "シェ":"she",
+        "ジェ":"je"
+    },
+    k_ta: {
+        "チェ":"che",
+        "ティ":"ti","ディ":"di",
+        "トゥ":"tu","ドゥ":"du",
+        "ツァ":"tsa","ツィ":"tsi","ツェ":"tse","ツォ":"tso"
+    },
+    k_ha: {
+        "ファ":"fa","フィ":"fi","フェ":"fe","フォ":"fo","フュ":"fyu"
+    },
+    k_wa: {
+        "ヴ":"vu","ヴァ":"va","ヴィ":"vi","ヴェ":"ve","ヴォ":"vo","ヴュ":"vyu"
+    }
+};
+
 const DAILY_CHALLENGE_CHAR_MAP = {
     ...Object.assign({}, ...Object.values(hiraganaRows)),
     ...Object.assign({}, ...Object.values(katakanaRows)),
@@ -1059,6 +1122,8 @@ const TEST_MODE_BASE_CHAR_MAP = {
 const DEFAULT_SETTINGS = {
     focusWeak: false,
     dakuten: false,
+    yoon: false,
+    extendedKatakana: false,
     hint: false,
     srs: true,
     mobileMode: false,
@@ -1218,6 +1283,8 @@ const endlessTotalPill = document.getElementById("endlessTotalPill");
 const endlessWrongPill = document.getElementById("endlessWrongPill");
 const heatmapEl = document.getElementById("heatmap");
 const popupEl = document.getElementById("popup");
+let popupLocked = false;
+let hoveredCell = null;
 const modifiersTabEl = document.getElementById("modifiersTab");
 const optionsTabEl = document.getElementById("optionsTab");
 const modifiersContentEl = document.getElementById("modifiersContent");
@@ -1278,11 +1345,17 @@ function rebuildCharMap() {
     for (const row of settings.hiraganaRows.filter(r => hiraganaRows[r])) {
         Object.assign(charMap, hiraganaRows[row]);
         if (settings.dakuten && dakutenRows[row]) Object.assign(charMap, dakutenRows[row]);
+        if (settings.yoon && yoonRows[row]) Object.assign(charMap, yoonRows[row]);
+        if (settings.yoon && settings.dakuten && yoonRows[`${row}_dakuten`]) Object.assign(charMap, yoonRows[`${row}_dakuten`]);
+        if (settings.extendedKatakana && extendedKatakanaRows[row]) Object.assign(charMap, extendedKatakanaRows[row]);
     }
 
     for (const row of settings.katakanaRows.filter(r => katakanaRows[r])) {
         Object.assign(charMap, katakanaRows[row]);
         if (settings.dakuten && dakutenRows[row]) Object.assign(charMap, dakutenRows[row]);
+        if (settings.yoon && yoonRows[row]) Object.assign(charMap, yoonRows[row]);
+        if (settings.yoon && settings.dakuten && yoonRows[`${row}_dakuten`]) Object.assign(charMap, yoonRows[`${row}_dakuten`]);
+        if (settings.extendedKatakana && extendedKatakanaRows[row]) Object.assign(charMap, extendedKatakanaRows[row]);
     }
 
     activeChars = Object.keys(charMap);
@@ -1356,9 +1429,28 @@ function isTestModeSession() {
 }
 
 function getTestModePoolMap() {
-    return settings.dakuten
-        ? { ...TEST_MODE_BASE_CHAR_MAP, ...Object.assign({}, ...Object.values(dakutenRows)) }
-        : { ...TEST_MODE_BASE_CHAR_MAP };
+    const pool = { ...TEST_MODE_BASE_CHAR_MAP };
+
+    if (settings.dakuten) {
+        Object.assign(pool, ...Object.values(dakutenRows));
+    }
+
+    if (settings.yoon) {
+        Object.entries(yoonRows).forEach(([key, value]) => {
+            if (!key.endsWith("_dakuten")) Object.assign(pool, value);
+        });
+        if (settings.dakuten) {
+            Object.entries(yoonRows).forEach(([key, value]) => {
+                if (key.endsWith("_dakuten")) Object.assign(pool, value);
+            });
+        }
+    }
+
+    if (settings.extendedKatakana) {
+        Object.assign(pool, ...Object.values(extendedKatakanaRows));
+    }
+
+    return pool;
 }
 
 function buildTestSequence() {
@@ -1612,7 +1704,9 @@ function buildModifierButtons() {
         ["testMode", "Test Mode"],
         ["comboKana", "Combo Kana Mode"],
         ["focusWeak", "Focus Weak"],
-        ["dakuten", "Dakuten"]
+        ["dakuten", "Dakuten"],
+        ["yoon", "Yōon"],
+        ["extendedKatakana", "Extended Katakana"]
     ];
 
     const container = document.getElementById("modifierOptions");
@@ -1719,59 +1813,85 @@ function heatmapColor(char) {
     return "var(--yellow)";
 }
 
+function showPopupForChar(ch, e) {
+    debugActiveChar = ch;
+    if (DEBUG_PANEL) renderDebugPanel();
+    const st = getStats(ch);
+    const tm = getAverageTime(ch);
+    const sr = getSrs(ch);
+
+    popupEl.innerHTML = `
+        <div class="popup-title">${ch}</div>
+        <div>Romaji: ${getAnswerMapForCurrentMode()[ch] || "—"}</div>
+        <div>Right: ${st.correct}</div>
+        <div>Wrong: ${st.wrong}</div>
+        <div>Avg time: ${formatDuration(tm)}</div>
+        <div>SRS level: ${sr.level}</div>
+    `;
+
+    popupEl.style.display = "block";
+
+    if (settings.mobileMode) {
+        popupEl.style.left = "50%";
+        popupEl.style.top = "50%";
+        popupEl.style.transform = "translate(-50%, -50%)";
+    } else {
+        popupEl.style.transform = "none";
+        const x = Math.min(window.innerWidth - 180, e.clientX + 10);
+        const y = Math.min(window.innerHeight - 120, e.clientY + 10);
+        popupEl.style.left = x + "px";
+        popupEl.style.top = y + "px";
+    }
+}
+
 function renderHeatmap() {
     heatmapEl.innerHTML = "";
 
     for (const ch of activeChars) {
         const cell = document.createElement("div");
         cell.className = "cell";
+        if (String(ch).length > 1) cell.classList.add("combo");
         cell.textContent = ch;
         cell.style.background = heatmapColor(ch);
 
-        cell.onmouseenter = () => {
-            debugActiveChar = ch;
-            if (DEBUG_PANEL) renderDebugPanel();
-        };
+        cell.addEventListener("mouseenter", (e) => {
+            hoveredCell = cell;
+            if (!popupLocked) showPopupForChar(ch, e);
+        });
 
-        cell.onclick = (e) => {
+        cell.addEventListener("mousemove", (e) => {
+            if (!popupLocked && hoveredCell === cell) showPopupForChar(ch, e);
+        });
+
+        cell.addEventListener("mouseleave", () => {
+            if (hoveredCell === cell) hoveredCell = null;
+            if (!popupLocked) closePopup();
+        });
+
+        cell.addEventListener("click", (e) => {
             e.stopPropagation();
-            debugActiveChar = ch;
-            if (DEBUG_PANEL) renderDebugPanel();
-            const st = getStats(ch);
-            const tm = getAverageTime(ch);
-            const sr = getSrs(ch);
-
-            popupEl.innerHTML = `
-                <div class="popup-title">${ch}</div>
-                <div>Right: ${st.correct}</div>
-                <div>Wrong: ${st.wrong}</div>
-                <div>Avg time: ${formatDuration(tm)}</div>
-                <div>SRS level: ${sr.level}</div>
-            `;
-
-            popupEl.style.display = "block";
-
-            if (settings.mobileMode) {
-                popupEl.style.left = "50%";
-                popupEl.style.top = "50%";
-                popupEl.style.transform = "translate(-50%, -50%)";
-            } else {
-                popupEl.style.transform = "none";
-                const x = Math.min(window.innerWidth - 180, e.clientX + 10);
-                const y = Math.min(window.innerHeight - 120, e.clientY + 10);
-                popupEl.style.left = x + "px";
-                popupEl.style.top = y + "px";
-            }
-        };
+            popupLocked = true;
+            hoveredCell = cell;
+            showPopupForChar(ch, e);
+        });
 
         heatmapEl.appendChild(cell);
     }
 }
 
-function closePopup() { popupEl.style.display = "none"; }
-document.addEventListener("click", closePopup);
+function closePopup() {
+    popupEl.style.display = "none";
+}
+
+document.addEventListener("click", (e) => {
+    if (e.target.closest(".cell")) return;
+    popupLocked = false;
+    hoveredCell = null;
+    closePopup();
+});
 
 function onSettingsChanged() {
+
     rebuildCharMap();
     ensureDataObjects();
     buildModifierButtons();
@@ -1882,7 +2002,7 @@ function renderDebugPanel() {
             <div><strong>Active kana:</strong> ${info.char} <span style="color:#bfbfbf;">(${info.romaji})</span></div>
             <div><strong>Current shown:</strong> <span style="color:#bfbfbf;">${currentChar || '—'}</span></div>
             <div><strong>Session state:</strong> <span style="color:#bfbfbf;">started=${sessionStarted} · locked=${locked} · activeChars=${activeChars.length}</span></div>
-            <div><strong>Settings:</strong> <span style="color:#bfbfbf;">focusWeak=${settings.focusWeak} · srs=${settings.srs} · dakuten=${settings.dakuten}</span></div>
+            <div><strong>Settings:</strong> <span style="color:#bfbfbf;">focusWeak=${settings.focusWeak} · srs=${settings.srs} · dakuten=${settings.dakuten} · yoon=${settings.yoon} · extendedKatakana=${settings.extendedKatakana}</span></div>
             <div style="padding:10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
                 <div style="font-weight:800;margin-bottom:6px;">Weight breakdown</div>
                 ${Object.entries(info.parts).map(([k,v]) => `<div style="display:flex;justify-content:space-between;gap:8px;"><span>${k}</span><strong>${v}</strong></div>`).join('')}
@@ -2501,6 +2621,8 @@ function saveTestModeResult() {
         durationMs,
         avgMs: sessionStats.timings.length ? Math.round(average(sessionStats.timings)) : 0,
         dakuten: !!settings.dakuten,
+        yoon: !!settings.yoon,
+        extendedKatakana: !!settings.extendedKatakana,
         kanaAsked: testSequence.length,
         notes: "Full shuffled reading test run.",
         breakdown,
