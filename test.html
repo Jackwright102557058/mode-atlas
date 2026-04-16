@@ -2611,6 +2611,15 @@ function renderAll() {
             ROW_PERFORMANCE_MOUNT.innerHTML = renderRowPerformance(result, activeRowGraphView);
             drawRowCharts(result, activeRowGraphView);
             bindRowInteractions(result);
+            document.querySelectorAll(".row-view-btn").forEach(toggleBtn => {
+                toggleBtn.addEventListener("click", (evt) => {
+                    evt.stopPropagation();
+                    activeRowGraphView = toggleBtn.dataset.rowView === "special" ? "special" : "regular";
+                    ROW_PERFORMANCE_MOUNT.innerHTML = renderRowPerformance(result, activeRowGraphView);
+                    drawRowCharts(result, activeRowGraphView);
+                    bindRowInteractions(result);
+                });
+            });
         });
     });
 }
