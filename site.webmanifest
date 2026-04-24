@@ -2,7 +2,7 @@
   "name": "Mode Atlas",
   "short_name": "Mode Atlas",
   "description": "A study ecosystem for kana, words, and future learning branches.",
-  "start_url": "./index.html",
+  "start_url": "/mode-atlas/",
   "display": "standalone",
   "background_color": "#05060b",
   "theme_color": "#080b15",
@@ -22,5 +22,6 @@
       "sizes": "32x32",
       "type": "image/png"
     }
-  ]
+  ],
+  "scope": "/mode-atlas/"
 }

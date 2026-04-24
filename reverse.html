@@ -1702,6 +1702,95 @@ body[data-display-mode="mobile"] .main {
 /* === Mode Atlas loading + sync polish === */
 .ma-loading-screen{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:radial-gradient(circle at 25% 18%,rgba(125,181,255,.16),transparent 30%),radial-gradient(circle at 76% 18%,rgba(181,150,255,.13),transparent 28%),rgba(5,6,11,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:opacity .32s ease,visibility .32s ease}.ma-loading-screen.done{opacity:0;visibility:hidden;pointer-events:none}.ma-loading-card{width:min(360px,calc(100vw - 40px));border-radius:28px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.035));border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 80px rgba(0,0,0,.45);color:var(--text,#f7f8ff)}.ma-loading-head{display:flex;align-items:center;gap:13px;margin-bottom:16px}.ma-loading-mark{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;font-weight:900;background:linear-gradient(135deg,#7db5ff,#b596ff);color:#061018}.ma-loading-title{font-weight:900;letter-spacing:-.03em}.ma-loading-sub{color:var(--muted,#9aa3b8);font-size:13px;margin-top:3px}.ma-skeleton{height:11px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.18),rgba(255,255,255,.06));background-size:220% 100%;animation:maShimmer 1.15s ease-in-out infinite}.ma-skeleton+.ma-skeleton{margin-top:9px}.ma-skeleton.short{width:64%}@keyframes maShimmer{0%{background-position:120% 0}100%{background-position:-120% 0}}.ma-sync-pill{margin-top:10px;display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;background:rgba(117,227,168,.10);border:1px solid rgba(117,227,168,.22);color:#c8f7dc;font-size:12px;font-weight:800}.ma-sync-pill:before{content:"";width:7px;height:7px;border-radius:999px;background:#75e3a8;box-shadow:0 0 12px rgba(117,227,168,.65)}
 
+
+
+/* === Mode Atlas final viewport/background fixes === */
+html {
+  min-height: 100%;
+  background: #05060b !important;
+  overscroll-behavior-y: none;
+}
+body {
+  background-color: #05060b !important;
+  overscroll-behavior-y: none;
+}
+@supports (height: 100svh) {
+  body { min-height: 100svh; }
+}
+
+
+
+/* === Study pages mobile nav + static viewport cleanup === */
+@media (max-width: 760px) {
+  body {
+    padding-top: 10px !important;
+    background-color: #05060b !important;
+  }
+  .study-nav {
+    position: relative !important;
+    top: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    margin: 0 0 10px !important;
+    border-radius: 26px !important;
+  }
+  .study-brand { min-width: 0 !important; }
+  .study-brand-text { display: none !important; }
+  .study-mark { width: 52px !important; height: 52px !important; border-radius: 18px !important; font-size: 1.28rem !important; }
+  .study-links {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding-bottom: 2px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .study-links::-webkit-scrollbar { display: none !important; }
+  .study-link { flex: 0 0 auto !important; padding: 10px 13px !important; font-size: 0.95rem !important; }
+  .study-nav-actions {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    width: auto !important;
+  }
+  .study-nav-btn.profile-trigger {
+    width: auto !important;
+    padding: 8px !important;
+    border-radius: 999px !important;
+  }
+  .study-nav-btn.profile-trigger > span:not(.profile-dot) { display: none !important; }
+  .study-nav-btn.hide {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    min-height: 42px !important;
+    padding: 9px 12px !important;
+    font-size: 0.82rem !important;
+    border-radius: 999px !important;
+    white-space: nowrap !important;
+  }
+  body.study-nav-hidden .study-nav { display: none !important; }
+  body.study-nav-hidden .study-nav-handle {
+    display: inline-flex !important;
+    top: 10px !important;
+    right: 10px !important;
+  }
+  .app-shell { align-items: flex-start !important; }
+  .main { margin-top: 0 !important; }
+}
+@media (min-width: 761px) {
+  .study-nav { margin-bottom: 14px !important; }
+}
+
 </style>
 </head>
 <body><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
