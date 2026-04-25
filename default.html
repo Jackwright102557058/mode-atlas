@@ -2449,6 +2449,8 @@ function updateStudyTopProfileDot() {
     updateStudyTopProfileDot();
     setTimeout(updateStudyTopProfileDot, 300);
     setTimeout(updateStudyTopProfileDot, 1200);
+    try { if (typeof refreshSaveBackedStateFromCloud === "function") refreshSaveBackedStateFromCloud(); }
+    catch (err) { console.warn("Trainer refresh after cloud bind failed", err); }
 }).catch((error) => {
     console.warn('Cloud profile controls could not load.', error);
     const status = document.getElementById('studyProfileStatus');
@@ -4568,7 +4570,7 @@ function init() {
     renderHeatmap();
     renderScoreHistory();
     showIdleState();
-    saveAll();
+    // Do not save during initial boot; wait for actual user changes.
 }
 
 function hydrateAndRefreshTrainer() {
@@ -4869,26 +4871,5 @@ init();
 </script>
 
 
-<script>
-(function(){
-  function bindStableModifiersDrawer(){
-    var tab=document.getElementById('modifiersTab');
-    var drawer=document.getElementById('modifiersContent');
-    if(!tab||!drawer||tab.dataset.stableModifiersBound==='true') return;
-    tab.dataset.stableModifiersBound='true';
-    tab.addEventListener('click',function(ev){
-      ev.preventDefault();
-      ev.stopPropagation();
-      var willOpen=!drawer.classList.contains('open');
-      drawer.classList.toggle('open',willOpen);
-      tab.classList.toggle('active',willOpen);
-      tab.textContent=willOpen?'Modifiers ▲':'Modifiers ▼';
-    }, true);
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindStableModifiersDrawer);
-  else bindStableModifiersDrawer();
-  window.addEventListener('load', bindStableModifiersDrawer);
-})();
-</script>
 </body>
 </html>
