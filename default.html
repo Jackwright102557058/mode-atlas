@@ -2201,6 +2201,74 @@ body::before { pointer-events: none; }
   transform: none !important;
 }
 
+
+/* === Mode Atlas compact Modifiers drawer layout === */
+.bottom-shell.ma-modifiers-only .drawer-content {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
+}
+.bottom-shell.ma-modifiers-only .options-stack {
+  display: grid !important;
+  grid-template-columns: minmax(360px, 1.18fr) minmax(250px, .86fr) minmax(250px, .86fr) !important;
+  gap: 10px !important;
+  width: min(1120px, calc(100vw - 32px)) !important;
+  margin: 0 auto !important;
+  align-items: start !important;
+}
+.bottom-shell.ma-modifiers-only .options-stack > div {
+  padding: 10px !important;
+  border-radius: 18px !important;
+}
+.bottom-shell.ma-modifiers-only .section-title {
+  margin-bottom: 8px !important;
+  font-size: 11px !important;
+  letter-spacing: .12em !important;
+}
+.bottom-shell.ma-modifiers-only #modifierOptions.button-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+.bottom-shell.ma-modifiers-only .rows-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+.bottom-shell.ma-modifiers-only .toggle-btn {
+  min-height: 36px !important;
+  padding: 8px 8px !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+  line-height: 1.12 !important;
+}
+.bottom-shell.ma-modifiers-only #modifierOptions .toggle-btn:nth-child(3),
+.bottom-shell.ma-modifiers-only #modifierOptions .toggle-btn:nth-child(8),
+.bottom-shell.ma-modifiers-only #modifierOptions .toggle-btn:nth-child(9) {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+}
+@media (max-width: 980px) {
+  .bottom-shell.ma-modifiers-only .options-stack {
+    grid-template-columns: minmax(0, 1fr) minmax(0, .86fr) minmax(0, .86fr) !important;
+    width: calc(100vw - 20px) !important;
+    gap: 8px !important;
+  }
+  .bottom-shell.ma-modifiers-only #modifierOptions.button-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .bottom-shell.ma-modifiers-only .toggle-btn { min-height: 34px !important; padding: 7px 6px !important; font-size: 12px !important; }
+}
+@media (max-width: 640px) {
+  .bottom-shell.ma-modifiers-only .drawer-content { padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) !important; }
+  .bottom-shell.ma-modifiers-only .options-stack {
+    grid-template-columns: 1fr 1fr !important;
+    width: calc(100vw - 12px) !important;
+    gap: 7px !important;
+  }
+  .bottom-shell.ma-modifiers-only .options-stack > div:first-child { grid-column: 1 / -1; }
+  .bottom-shell.ma-modifiers-only .options-stack > div { padding: 8px !important; border-radius: 14px !important; }
+  .bottom-shell.ma-modifiers-only #modifierOptions.button-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .bottom-shell.ma-modifiers-only .rows-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  .bottom-shell.ma-modifiers-only .section-title { font-size: 10px !important; margin-bottom: 6px !important; }
+  .bottom-shell.ma-modifiers-only .toggle-btn { min-height: 31px !important; padding: 6px 4px !important; font-size: 10.5px !important; border-radius: 10px !important; }
+}
+
 </style>
 </head>
 <body><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
@@ -3228,17 +3296,18 @@ function makeToggleButton(label, active, onClick, disabled = false) {
 function buildModifierButtons() {
     const modes = [
         ["hint", "Hint Mode"],
-        ["srs", "SRS Mode"],
+        ["focusWeak", "Focus Weak"],
         ["endless", "Endless Mode"],
         ["timeTrial", "Time Trial Mode"],
-        ["dailyChallenge", "Daily Challenge"],
-        ["testMode", "Test Mode"],
         ["comboKana", "Combo Kana Mode"],
-        ["focusWeak", "Focus Weak"],
+        ["testMode", "Test Mode"],
+        ["dailyChallenge", "Daily Challenge"],
+        ["srs", "SRS Review Priority"],
         ["dakuten", "Dakuten"],
         ["yoon", "Yōon"],
-        ["extendedKatakana", "Extended Katakana"]
+        ["extendedKatakana", "Extended Kana"]
     ];
+
 
     const container = document.getElementById("modifierOptions");
     container.innerHTML = "";
