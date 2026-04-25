@@ -5005,9 +5005,11 @@ init();
     var drawer=document.getElementById('modifiersContent');
     if(!drawer || drawer.dataset.maFinalGuard) return;
     drawer.dataset.maFinalGuard='true';
-    ['click','pointerdown','touchstart'].forEach(function(type){
-      drawer.addEventListener(type,function(e){ e.stopPropagation(); }, true);
-    });
+    // Let modifier buttons receive clicks first, then stop the event from
+    // bubbling out to page-level handlers that can close/toggle the drawer.
+    drawer.addEventListener('click', function(e){ e.stopPropagation(); }, false);
+    drawer.addEventListener('touchstart', function(e){ e.stopPropagation(); }, { passive: true });
+    drawer.addEventListener('pointerdown', function(e){ e.stopPropagation(); }, false);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',guard); else guard();
   setTimeout(guard,500);
