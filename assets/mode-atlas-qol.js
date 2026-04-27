@@ -53,6 +53,24 @@
   function updateThemeButtons(){
     const pref=getThemePref(); $all('[data-ma-theme-choice]').forEach(btn=>{ const on=btn.dataset.maThemeChoice===pref; btn.classList.toggle('active', on); btn.setAttribute('aria-pressed', on?'true':'false'); });
   }
+
+  function syncProfileAuthButtons(){
+    let user = null;
+    try { user = window.KanaCloudSync?.getUser?.() || null; } catch {}
+    const signedIn = !!user;
+    const signInSelectors = '#profileSignInBtn,#studyProfileSignIn,#identitySignInBtn,[data-ma-sign-in]';
+    const signOutSelectors = '#profileSignOutBtn,#studyProfileSignOut,#identitySignOutBtn,[data-ma-sign-out]';
+    $all(signInSelectors).forEach(btn=>{
+      btn.hidden = signedIn;
+      btn.style.display = signedIn ? 'none' : 'inline-flex';
+      btn.setAttribute('aria-hidden', signedIn ? 'true' : 'false');
+    });
+    $all(signOutSelectors).forEach(btn=>{
+      btn.hidden = !signedIn;
+      btn.style.display = signedIn ? 'inline-flex' : 'none';
+      btn.setAttribute('aria-hidden', signedIn ? 'false' : 'true');
+    });
+  }
   function enhanceProfileMenus(){
     $all('.profile-drawer,#profileDrawer,.profile-overlay aside,.drawer-panel').forEach(drawer=>{
       if (drawer.dataset.maQolEnhanced) { updateThemeButtons(); return; }
@@ -66,6 +84,7 @@
     });
     updateThemeButtons();
     dedupeProfileMenu();
+    syncProfileAuthButtons();
   }
 
   function dedupeProfileMenu(){
@@ -117,6 +136,29 @@
     };
   }
 
+
+  function normalizeResultForCount(item, expectedMode){
+    if(!item || typeof item !== 'object') return null;
+    const mode = item.mode === 'writing' ? 'writing' : 'reading';
+    if(expectedMode && mode !== expectedMode) return null;
+    const type = item.type === 'average' ? 'average' : 'test';
+    if(type === 'average') return null;
+    const id = String(item.id || item.createdAt || item.completedAt || item.date || item.startedAt || '');
+    const sig = id || (mode+'|'+String(item.date||'')+'|'+String(item.startedAt||'')+'|'+String(item.correct||'')+'|'+String(item.wrong||''));
+    return { mode, sig };
+  }
+  function formalTestCount(){
+    const readingKeys=['testModeResults','kanaTrainerTestModeResults','readingTestModeResults','kanaTrainerReadingTestModeResults'];
+    const writingKeys=['writingTestModeResults','kanaTrainerWritingTestModeResults','testModeResults','kanaTrainerTestModeResults','readingTestModeResults','kanaTrainerReadingTestModeResults'];
+    const seen=new Set();
+    readingKeys.forEach(key=>arr(key).forEach(item=>{ const n=normalizeResultForCount(item,'reading'); if(n) seen.add('reading|'+n.sig); }));
+    writingKeys.forEach(key=>arr(key).forEach(item=>{ const n=normalizeResultForCount(item,'writing'); if(n) seen.add('writing|'+n.sig); }));
+    return seen.size;
+  }
+
+  window.ModeAtlas = window.ModeAtlas || {};
+  window.ModeAtlas.formalTestCount = formalTestCount;
+
   function enhanceKanaDashboard(){
     if(PAGE !== 'kana.html') return;
     if($('#maKanaProDashboard')) return;
@@ -130,7 +172,7 @@
       '<div class="ma-kana-stat"><div class="label">Current streak</div><div class="value">'+s.streak+'</div><div class="hint">daily challenge days</div></div>'+
       '<div class="ma-kana-stat"><div class="label">Today</div><div class="value">'+(s.dailyDone?'Done':'Ready')+'</div><div class="hint">daily challenge status</div></div>'+
       '<div class="ma-kana-stat"><div class="label">Kana seen</div><div class="value">'+Math.max(s.readingKnown,s.writingKnown)+'</div><div class="hint">tracked in practice</div></div>'+
-      '<div class="ma-kana-stat"><div class="label">Formal tests</div><div class="value">'+(s.readingTests+s.writingTests)+'</div><div class="hint">saved result cards</div></div>'+
+      '<div class="ma-kana-stat"><div class="label">Formal tests</div><div class="value">'+formalTestCount()+'</div><div class="hint">saved result cards</div></div>'+
       '</div><div class="ma-kana-stat-grid">'+
       '<div class="ma-kana-stat"><div class="label">Reading accuracy</div><div class="value">'+(s.readingAccuracy||'—')+(s.readingAccuracy?'%':'')+'</div><div class="hint">'+s.readingAnswers+' answers</div></div>'+
       '<div class="ma-kana-stat"><div class="label">Writing accuracy</div><div class="value">'+(s.writingAccuracy||'—')+(s.writingAccuracy?'%':'')+'</div><div class="hint">'+s.writingAnswers+' answers</div></div>'+
@@ -168,23 +210,10 @@
 
   function addResultFilters(){
     if(PAGE !== 'test.html') return;
-    if($('#maResultFilterBar')) return;
-    const bar=document.createElement('div'); bar.id='maResultFilterBar'; bar.className='ma-result-filter-bar';
-    bar.innerHTML='<strong style="font-size:13px;margin-right:4px;">Result view</strong><button type="button" class="active" data-ma-result-filter="all">All</button><button type="button" data-ma-result-filter="reading">Reading</button><button type="button" data-ma-result-filter="writing">Writing</button><button type="button" data-ma-result-filter="recent">Recent</button><span class="ma-qol-note" style="margin:0;">Filters visually dim non-matching cards where possible.</span>';
-    const anchor=$('.shell > nav, .branch-nav, .topbar, nav') || document.body.firstElementChild;
-    if(anchor) anchor.insertAdjacentElement('afterend', bar); else document.body.prepend(bar);
-    bar.addEventListener('click', e=>{ const btn=e.target.closest('[data-ma-result-filter]'); if(!btn)return; $all('[data-ma-result-filter]',bar).forEach(b=>b.classList.toggle('active',b===btn)); applyResultFilter(btn.dataset.maResultFilter); });
+    $all('#maResultFilterBar,.ma-result-filter-bar').forEach(el=>el.remove());
   }
   function applyResultFilter(filter){
-    const cards=$all('.result-card,.test-card,.stored-test,.history-card,.result-row,.score-card,.card').filter(c=>!c.closest('#maResultFilterBar'));
-    cards.forEach(c=>{
-      const txt=(c.textContent||'').toLowerCase(); let show=true;
-      if(filter==='reading') show=txt.includes('reading')||txt.includes('read');
-      if(filter==='writing') show=txt.includes('writing')||txt.includes('write');
-      if(filter==='recent') show=true;
-      c.style.opacity=show?'':'0.34'; c.style.filter=show?'':'grayscale(.55)';
-    });
-    toast('Results view: '+filter, 'ok', 1600);
+    $all('.result-card,.test-card,.stored-test,.history-card,.result-row,.score-card,.card').forEach(c=>{ c.style.opacity=''; c.style.filter=''; });
   }
 
   function repairSaveData(){
@@ -248,13 +277,14 @@
 
   function boot(){
     enhanceProfileMenus(); enhanceKanaDashboard(); addSessionPreview(); addResultFilters(); installHiddenDevButton(); normalizeInputs(); registerPwa(); dedupeProfileMenu();
-    setTimeout(()=>{ enhanceProfileMenus(); dedupeProfileMenu(); }, 400);
-    setTimeout(()=>{ enhanceProfileMenus(); dedupeProfileMenu(); normalizeInputs(); }, 1400);
+    setTimeout(()=>{ enhanceProfileMenus(); dedupeProfileMenu(); syncProfileAuthButtons(); }, 400);
+    setTimeout(()=>{ enhanceProfileMenus(); dedupeProfileMenu(); normalizeInputs(); syncProfileAuthButtons(); }, 1400);
     if(sessionStorage.getItem('modeAtlasSafeMode')==='1') toast('Safe mode is active for this page load.', 'warn', 4500);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   window.addEventListener('pageshow', ()=>setTimeout(boot,50));
-  window.addEventListener('kanaCloudSyncStatusChanged', ()=>setTimeout(enhanceProfileMenus,50));
+  window.addEventListener('kanaCloudSyncStatusChanged', ()=>setTimeout(()=>{ enhanceProfileMenus(); syncProfileAuthButtons(); },50));
+  setInterval(syncProfileAuthButtons, 1200);
 })();
 
 /* QOL continuation: extra dashboard features, result insight panel, nav cleanup */
@@ -527,7 +557,7 @@
     const all=[...new Set([...HIRA,...KATA,...DAK,...CONFUSABLE])];
     const timed=all.map(ch=>({ch,avg:charAvg(ch)})).filter(x=>x.avg).sort((a,b)=>b.avg-a.avg);
     const avg=timed.length?timed.reduce((a,b)=>a+b.avg,0)/timed.length:0;
-    const formal=(readJSON('testModeResults',[])||[]).length+(readJSON('readingTestModeResults',[])||[]).length+(readJSON('writingTestModeResults',[])||[]).length+(readJSON('kanaTrainerReadingTestModeResults',[])||[]).length+(readJSON('kanaTrainerWritingTestModeResults',[])||[]).length;
+    const formal=(window.ModeAtlas?.formalTestCount?.() || 0);
     const panel=document.createElement('section'); panel.id='maCompactResultInsights'; panel.className='ma-compact-results';
     panel.innerHTML='<div class="ma-mini-result-card"><b>Reading accuracy</b><strong>'+(r.t?r.acc+'%':'—')+'</strong><span>'+r.t+' answers</span></div><div class="ma-mini-result-card"><b>Writing accuracy</b><strong>'+(w.t?w.acc+'%':'—')+'</strong><span>'+w.t+' answers</span></div><div class="ma-mini-result-card"><b>Average speed</b><strong>'+(avg?formatMs(avg):'—')+'</strong><span>'+(avg && avg < 2000 ? 'Next goal under 1.0s' : 'Goal under 2.0s')+'</span></div><div class="ma-mini-result-card"><b>Slowest tracked</b><strong>'+(timed[0]?.ch||weak[0]?.ch||'—')+'</strong><span>'+(timed[0]?formatMs(timed[0].avg):(weak.length?weak.map(x=>x.ch).join(' · '):'More data needed'))+'</span></div><div class="ma-mini-result-card"><b>Formal tests</b><strong>'+formal+'</strong><span>saved result cards</span></div>';
     const filter=$('#maResultFilterBar');
