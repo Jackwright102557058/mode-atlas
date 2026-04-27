@@ -641,15 +641,7 @@ async function signOutUser() {
   hydratedForUserId = null;
 }
 
-function isSessionCloudDeferred() {
-  try { return window.ModeAtlasSessionActive === true || sessionStorage.getItem("modeAtlasSessionActive") === "1"; }
-  catch (error) { return window.ModeAtlasSessionActive === true; }
-}
-function markPendingSessionSync() { try { sessionStorage.setItem("modeAtlasPendingCloudSync", "1"); } catch (error) {} }
-function clearPendingSessionSync() { try { sessionStorage.removeItem("modeAtlasPendingCloudSync"); } catch (error) {} }
-
 async function syncNow() {
-  if (isSessionCloudDeferred()) { markPendingSessionSync(); return false; }
   await authReady;
   if (!CONFIG_READY || !currentUser || !db) return false;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -691,7 +683,6 @@ async function syncNow() {
 
 
 function scheduleSync(delay = 800) {
-  if (isSessionCloudDeferred()) { markPendingSessionSync(); return false; }
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
     syncNow().catch((error) => {
@@ -858,7 +849,6 @@ window.KanaCloudSync = {
   signOut: signOutUser,
   scheduleSync,
   syncNow,
-  flushPendingSessionSync: () => { clearPendingSessionSync(); return scheduleSync(250); },
   markSectionUpdated,
   beginLocalImport,
   getUser,

@@ -2320,7 +2320,7 @@ body::before { pointer-events: none; }
 <link rel="stylesheet" href="assets/mode-atlas-qol.css" />
 <script defer src="assets/mode-atlas-qol.js"></script>
 </head>
-<body class="ma-writing-page"><script id="maEarlyLoadingRelease">(function(){function r(){var e=document.getElementById("maLoadingScreen");if(e){e.classList.add("done");e.style.opacity="0";e.style.visibility="hidden";e.style.pointerEvents="none";setTimeout(function(){try{e.remove()}catch(t){}},250)}}window.ModeAtlasReleaseLoader=r;setTimeout(r,1200);setTimeout(r,2400);window.addEventListener("load",function(){setTimeout(r,250)})})();</script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
+<body class="ma-writing-page"><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
 
 
 <nav class="study-nav" id="studyNav" aria-label="Study navigation">
@@ -3003,7 +3003,24 @@ function saveAll() {
     localStorage.setItem("reverseScoreHistory", JSON.stringify(scoreHistory));
     localStorage.setItem("reverseDailyChallengeHistory", JSON.stringify(dailyChallengeHistory));
     localStorage.setItem("reverseHighScore", String(highScore));
-    window.KanaCloudSync?.scheduleSync();
+    if (sessionStarted) {
+        try { localStorage.setItem("modeAtlasPendingSessionCloudSync", "writing"); } catch (e) {}
+    } else {
+        window.KanaCloudSync?.scheduleSync();
+    }
+}
+
+function flushPendingSessionCloudSync() {
+    let shouldSync = false;
+    try {
+        shouldSync = localStorage.getItem("modeAtlasPendingSessionCloudSync") === "writing" || localStorage.getItem("modeAtlasPendingSessionCloudSync") === "1";
+        if (shouldSync) localStorage.removeItem("modeAtlasPendingSessionCloudSync");
+    } catch (e) { shouldSync = true; }
+    if (shouldSync) {
+        setTimeout(function(){
+            try { window.KanaCloudSync?.scheduleSync?.(250); } catch (e) {}
+        }, 700);
+    }
 }
 
 function rebuildCharMap() {
@@ -4462,7 +4479,6 @@ function stopTrialTimer() {
 }
 
 function startSession() {
-    try { window.ModeAtlasSessionActive = true; sessionStorage.setItem("modeAtlasSessionActive", "1"); } catch (e) { window.ModeAtlasSessionActive = true; }
     if (!isDailyChallengeSession() && !isTestModeSession() && activeChars.length === 0) {
         showIdleState();
         hintEl.textContent = "Select at least one row to begin.";
@@ -4629,8 +4645,7 @@ function saveTestModeResult() {
 }
 
 function endTestMode() {
-    try { window.ModeAtlasSessionActive = false; sessionStorage.removeItem("modeAtlasSessionActive"); } catch (e) { window.ModeAtlasSessionActive = false; }
-    setTimeout(function(){ try { window.KanaCloudSync && window.KanaCloudSync.flushPendingSessionSync && window.KanaCloudSync.flushPendingSessionSync(); } catch(e){} }, 700);
+    flushPendingSessionCloudSync();
     const durationMs = Math.max(0, Date.now() - testStartTime);
     const totalAnswered = testCorrect + testWrong;
     const scorePct = totalAnswered ? Math.round((testCorrect / totalAnswered) * 100) : 0;
@@ -4812,8 +4827,7 @@ function showSessionModal(autoEnded = false) {
 }
 
 function endDailyChallenge() {
-    try { window.ModeAtlasSessionActive = false; sessionStorage.removeItem("modeAtlasSessionActive"); } catch (e) { window.ModeAtlasSessionActive = false; }
-    setTimeout(function(){ try { window.KanaCloudSync && window.KanaCloudSync.flushPendingSessionSync && window.KanaCloudSync.flushPendingSessionSync(); } catch(e){} }, 700);
+    flushPendingSessionCloudSync();
     const dateKey = getTodayKey();
     const total = dailySequence.length || 20;
     const timeMs = Math.max(0, Date.now() - dailyStartTime);
@@ -4864,10 +4878,9 @@ function endDailyChallenge() {
 }
 
 function endSession(autoEnded = false) {
+    flushPendingSessionCloudSync();
     hideComboTierNotice();
     if (!sessionStarted) return;
-    try { window.ModeAtlasSessionActive = false; sessionStorage.removeItem("modeAtlasSessionActive"); } catch (e) { window.ModeAtlasSessionActive = false; }
-    setTimeout(function(){ try { window.KanaCloudSync && window.KanaCloudSync.flushPendingSessionSync && window.KanaCloudSync.flushPendingSessionSync(); } catch(e){} }, 700);
 
     if (isDailyChallengeSession()) {
         endDailyChallenge();
