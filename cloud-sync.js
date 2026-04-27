@@ -394,7 +394,6 @@ const authReady = new Promise((resolve) => {
 });
 let hydratedForUserId = null;
 let syncTimeout = null;
-let deferredSessionSyncPending = false;
 let lastStatus = '';
 const uiBindings = new Set();
 const LAST_CLOUD_SYNC_KEY = 'modeAtlasLastCloudSyncAt';
@@ -642,37 +641,15 @@ async function signOutUser() {
   hydratedForUserId = null;
 }
 
-function isPracticeSessionActive() {
-  try {
-    return window.ModeAtlasPracticeSessionActive === true || sessionStorage.getItem('modeAtlasPracticeSessionActive') === '1';
-  } catch {
-    return window.ModeAtlasPracticeSessionActive === true;
-  }
+function isSessionCloudDeferred() {
+  try { return window.ModeAtlasSessionActive === true || sessionStorage.getItem("modeAtlasSessionActive") === "1"; }
+  catch (error) { return window.ModeAtlasSessionActive === true; }
 }
-
-function beginPracticeSessionSyncPause() {
-  try {
-    window.ModeAtlasPracticeSessionActive = true;
-    sessionStorage.setItem('modeAtlasPracticeSessionActive', '1');
-  } catch {
-    window.ModeAtlasPracticeSessionActive = true;
-  }
-}
-
-function endPracticeSessionSyncPause(flush = true) {
-  try {
-    window.ModeAtlasPracticeSessionActive = false;
-    sessionStorage.removeItem('modeAtlasPracticeSessionActive');
-  } catch {
-    window.ModeAtlasPracticeSessionActive = false;
-  }
-  if (flush && deferredSessionSyncPending) {
-    deferredSessionSyncPending = false;
-    scheduleSync(500);
-  }
-}
+function markPendingSessionSync() { try { sessionStorage.setItem("modeAtlasPendingCloudSync", "1"); } catch (error) {} }
+function clearPendingSessionSync() { try { sessionStorage.removeItem("modeAtlasPendingCloudSync"); } catch (error) {} }
 
 async function syncNow() {
+  if (isSessionCloudDeferred()) { markPendingSessionSync(); return false; }
   await authReady;
   if (!CONFIG_READY || !currentUser || !db) return false;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -714,6 +691,7 @@ async function syncNow() {
 
 
 function scheduleSync(delay = 800) {
+  if (isSessionCloudDeferred()) { markPendingSessionSync(); return false; }
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
     syncNow().catch((error) => {
@@ -880,9 +858,7 @@ window.KanaCloudSync = {
   signOut: signOutUser,
   scheduleSync,
   syncNow,
-  beginPracticeSessionSyncPause,
-  endPracticeSessionSyncPause,
-  isPracticeSessionActive,
+  flushPendingSessionSync: () => { clearPendingSessionSync(); return scheduleSync(250); },
   markSectionUpdated,
   beginLocalImport,
   getUser,

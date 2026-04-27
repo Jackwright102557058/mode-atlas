@@ -3113,6 +3113,8 @@ function updateComboKanaBestScore() {
 }
 
 function endDailyChallenge() {
+    try { window.ModeAtlasSessionActive = false; sessionStorage.removeItem("modeAtlasSessionActive"); } catch (e) { window.ModeAtlasSessionActive = false; }
+    setTimeout(function(){ try { window.KanaCloudSync && window.KanaCloudSync.flushPendingSessionSync && window.KanaCloudSync.flushPendingSessionSync(); } catch(e){} }, 700);
     const dateKey = getTodayKey();
     const total = dailySequence.length || 20;
     const timeMs = Math.max(0, Date.now() - dailyStartTime);
@@ -3871,6 +3873,7 @@ function stopTrialTimer() {
 }
 
 function startSession() {
+    try { window.ModeAtlasSessionActive = true; sessionStorage.setItem("modeAtlasSessionActive", "1"); } catch (e) { window.ModeAtlasSessionActive = true; }
     sessionStarted = true;
     sessionStats = createEmptySessionStats();
     sessionStats.active = true;
@@ -4248,6 +4251,8 @@ function saveTestModeResult() {
 }
 
 function endTestMode() {
+    try { window.ModeAtlasSessionActive = false; sessionStorage.removeItem("modeAtlasSessionActive"); } catch (e) { window.ModeAtlasSessionActive = false; }
+    setTimeout(function(){ try { window.KanaCloudSync && window.KanaCloudSync.flushPendingSessionSync && window.KanaCloudSync.flushPendingSessionSync(); } catch(e){} }, 700);
     const durationMs = Math.max(0, Date.now() - testStartTime);
     const totalAnswered = testCorrect + testWrong;
     const scorePct = totalAnswered ? Math.round((testCorrect / totalAnswered) * 100) : 0;
@@ -4430,6 +4435,8 @@ function showSessionModal(autoEnded = false) {
 function endSession(autoEnded = false) {
     hideComboTierNotice();
     if (!sessionStarted) return;
+    try { window.ModeAtlasSessionActive = false; sessionStorage.removeItem("modeAtlasSessionActive"); } catch (e) { window.ModeAtlasSessionActive = false; }
+    setTimeout(function(){ try { window.KanaCloudSync && window.KanaCloudSync.flushPendingSessionSync && window.KanaCloudSync.flushPendingSessionSync(); } catch(e){} }, 700);
 
     if (isDailyChallengeSession()) {
         sessionStarted = false;
@@ -5167,6 +5174,5 @@ init();
   <script src="assets/mode-atlas-stable-controls.js"></script>
   <script src="assets/mode-atlas-auth-mobile-fix.js"></script>
   <script src="assets/mode-atlas-auth-single-button.js"></script>
-  <script src="assets/mode-atlas-session-local-save.js?v=2.8.3"></script>
 </body>
 </html>
