@@ -1,5 +1,6 @@
 const MODE_ATLAS_VERSION = '2.11.4';
 const CACHE_NAME = 'mode-atlas-v' + MODE_ATLAS_VERSION;
+
 const CORE_ASSETS = [
   './',
   './assets/android-chrome-512.png',
@@ -56,6 +57,17 @@ const CORE_ASSETS = [
   './wordbank.html'
 ];
 
+// Files that should always bypass the service worker.
+// This lets Google and browsers fetch the real files directly.
+function shouldBypassServiceWorker(url) {
+  return (
+    url.pathname === '/sitemap.xml' ||
+    url.pathname === '/robots.txt' ||
+    url.pathname === '/CNAME' ||
+    url.pathname.startsWith('/.well-known/')
+  );
+}
+
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     try {
@@ -64,6 +76,7 @@ self.addEventListener('install', event => {
     } catch (err) {
       // Network-first app: cache failures should never block installation.
     }
+
     await self.skipWaiting();
   })());
 });
@@ -72,7 +85,13 @@ self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     try {
       const keys = await caches.keys();
-      await Promise.all(keys.filter(k => k !== CACHE_NAME && /^mode-atlas-/i.test(k)).map(k => caches.delete(k)));
+
+      await Promise.all(
+        keys
+          .filter(k => k !== CACHE_NAME && /^mode-atlas-/i.test(k))
+          .map(k => caches.delete(k))
+      );
+
       await self.clients.claim();
     } catch (err) {}
   })());
@@ -80,22 +99,34 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
+
   if (url.origin !== self.location.origin) return;
+
+  // Do not intercept sitemap, robots, GitHub Pages domain files,
+  // or certificate/verification files.
+  if (shouldBypassServiceWorker(url)) return;
 
   event.respondWith((async () => {
     try {
       const fresh = await fetch(event.request);
       const cache = await caches.open(CACHE_NAME);
-      cache.put(event.request, fresh.clone()).catch(()=>{});
+
+      cache.put(event.request, fresh.clone()).catch(() => {});
+
       return fresh;
     } catch (err) {
       const cached = await caches.match(event.request);
+
       if (cached) return cached;
+
       if (event.request.mode === 'navigate') {
         const fallback = await caches.match('./index.html');
+
         if (fallback) return fallback;
       }
+
       throw err;
     }
   })());
