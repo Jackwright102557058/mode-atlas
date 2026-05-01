@@ -462,21 +462,21 @@ function getSyncStatus() {
   const online = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
   const state = localStorage.getItem(CLOUD_STATE_KEY) || '';
   if (!CONFIG_READY) {
-    return { state: 'local', tone: 'neutral', text: 'Local saving · cloud setup missing', lastSync, user };
+    return { state: 'local', tone: 'neutral', text: 'Progress saves on this device', lastSync, user };
   }
   if (!user) {
-    return { state: 'local', tone: 'neutral', text: 'Local saving · log in for cloud save', lastSync, user };
+    return { state: 'local', tone: 'neutral', text: 'Progress saves on this device · sign in to sync', lastSync, user };
   }
   if (!online || state === 'offline') {
-    return { state: 'offline', tone: 'warning', text: 'No cloud access · last sync ' + formatDateTime(lastSync), lastSync, user };
+    return { state: 'offline', tone: 'warning', text: 'Offline · changes will sync later', lastSync, user };
   }
-  return { state: 'cloud', tone: 'ok', text: 'Cloud save synced', lastSync, user };
+  return { state: 'cloud', tone: 'ok', text: 'Synced across devices', lastSync, user };
 }
 
 function statusText() {
   const st = getSyncStatus();
-  if (st.state === 'cloud') return 'Signed in. Your cloud save is active and will use the newest data.';
-  if (st.state === 'offline') return 'Signed in, but cloud saving is currently unavailable. Local changes will sync when cloud access returns.';
+  if (st.state === 'cloud') return 'Signed in. Your progress is synced across devices.';
+  if (st.state === 'offline') return 'Signed in. You are offline, so changes will sync when connection returns.';
   return st.text;
 }
 
@@ -490,7 +490,7 @@ function updateUiBinding(binding) {
   const user = currentUser;
   if (binding.statusEl) binding.statusEl.textContent = binding.customStatus || lastStatus;
   if (binding.nameEl) binding.nameEl.textContent = user?.displayName || user?.email || 'Guest';
-  if (binding.emailEl) binding.emailEl.textContent = user?.email || (CONFIG_READY ? 'Not signed in' : 'Firebase config missing');
+  if (binding.emailEl) binding.emailEl.textContent = user?.email || (CONFIG_READY ? 'Not signed in' : 'Cloud sync unavailable');
   if (binding.photoEl) {
     if (user?.photoURL) {
       binding.photoEl.src = user.photoURL;

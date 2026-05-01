@@ -129,7 +129,7 @@
   function reset(){[K.first,K.return,K.forceFirst,K.forceReturn,K.lastVisit,K.streak].forEach(k=>localStorage.removeItem(k));console.info('Mode Atlas visit flags reset')}
   window.modeAtlasTriggerFirstVisit=triggerFirst;window.modeAtlasTriggerDailyReturn=triggerReturn;window.modeAtlasResetVisitFlags=reset;
   function addDev(){const p=document.getElementById('maDevPanel');if(!p||p.querySelector('[data-visit-tools]'))return;const card=p.querySelector('.ma-dev-card')||p,row=document.createElement('div');row.className='ma-dev-row';row.dataset.visitTools='true';row.innerHTML='<div class="ma-dev-label">Visit flows</div><div class="ma-dev-actions"><button class="ma-dev-btn" type="button" data-first>Trigger first visit</button><button class="ma-dev-btn" type="button" data-return>Trigger daily return</button><button class="ma-dev-btn" type="button" data-reset>Reset visit flags</button></div>';row.onclick=e=>{if(e.target.closest('[data-first]'))triggerFirst();if(e.target.closest('[data-return]'))triggerReturn();if(e.target.closest('[data-reset]'))reset()};card.appendChild(row)}
-  function patchDev(){const o=window.dev;if(typeof o==='function'&&!o.__visitPatched){const p=function(){const r=o.apply(this,arguments);setTimeout(addDev,0);return r};p.__visitPatched=true;window.dev=p;window.atlasDev=p}new MutationObserver(addDev).observe(document.documentElement,{childList:true,subtree:true});setTimeout(addDev,500)}
+  function patchDev(){if(!window.ModeAtlasEnv?.allowDevTools)return;const o=window.dev;if(typeof o==='function'&&!o.__visitPatched){const p=function(){const r=o.apply(this,arguments);setTimeout(addDev,0);return r};p.__visitPatched=true;window.dev=p;window.atlasDev=p}new MutationObserver(addDev).observe(document.documentElement,{childList:true,subtree:true});setTimeout(addDev,500)}
   function init(){track();maybe();patchDev()} if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 (function ModeAtlasUnifiedSaveSyncUi(){
@@ -371,7 +371,7 @@
 /* === mode-atlas-late-features.js === */
 /* Shared late features: QoL batch, about panel, achievements. */
 
-/* === Mode Atlas QOL batch: settings structure, achievements, mistake review, import preview, PWA, changelog, speed run, empty states === */
+/* === Mode Atlas QOL batch: settings structure, achievements, mistake review, import preview, install prompt, changelog, speed run, empty states === */
 (function ModeAtlasQolBatch(){
   if (window.__modeAtlasQolBatchLoaded) return;
   window.__modeAtlasQolBatchLoaded = true;
@@ -864,7 +864,7 @@
   }
 
   function installWhatsNew(){
-    const version='2.7.1-qol';
+    const version=(window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || '2.11.2';
     const changes=[
       'Cleaner grouped modifier settings.',
       'Preset achievement progress toward 100 correct answers.',
@@ -872,8 +872,9 @@
       'Improved end-of-session actions.',
       'Import preview before applying backups.',
       'Speed Run mode.',
-      'Better empty states and PWA install polish.',
-      'Dashboard data fallback so Kana hub cards still populate when cloud scripts are blocked.'
+      'Better empty states and app install guidance.',
+      'Cleaner profile, save, and app status information.',
+      'More polished account and save messages.'
     ];
     const signature = version + '::' + changes.join('|');
     const seenVersionKey = 'maWhatsNewSeenVersion';
@@ -898,7 +899,7 @@
         modal.className='ma-whats-new-backdrop';
         modal.innerHTML=`<div class="ma-whats-new-modal">
           <h2>What’s new</h2>
-          <p>Mode Atlas has a new QOL update focused on cleaner practice flow and safer data handling.</p>
+          <p>Mode Atlas has a new polish update focused on cleaner menus, safer save handling, and clearer account information.</p>
           <ul>${changes.map(c=>`<li>${c}</li>`).join('')}</ul>
           <button type="button" data-ma-whats-new-close>Done</button>
         </div>`;
@@ -934,28 +935,15 @@
       const prompt=document.createElement('div');
       prompt.id='maInstallPrompt';
       prompt.className='ma-install-prompt';
-      prompt.innerHTML='<div><b>Install Mode Atlas</b><span>Use it like an app, including offline practice.</span></div><button type="button" data-ma-install>Install</button><button type="button" data-ma-install-close>Not now</button>';
+      prompt.innerHTML='<div><b>Install Mode Atlas</b><span>Add it to your device for faster access and a full-screen study experience. On iPad, use Share → Add to Home Screen if the install button is not shown.</span></div><button type="button" data-ma-install>Install</button><button type="button" data-ma-install-close>Not now</button>';
       document.body.appendChild(prompt);
       prompt.addEventListener('click', async e=>{
         if(e.target.closest('[data-ma-install-close]')) prompt.remove();
         if(e.target.closest('[data-ma-install]') && deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch{} deferredPrompt=null; prompt.remove(); }
       });
     }
-    if(false && 'serviceWorker' in navigator && location.protocol !== 'file:'){
-      
-    // GitHub-safe reset: clear older service workers/caches so stale builds cannot trap the app on loading.
-    try {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister())).catch(()=>{});
-      }
-      if (window.caches) {
-        caches.keys().then(keys => keys.filter(k => /^mode-atlas-/i.test(k)).forEach(k => caches.delete(k))).catch(()=>{});
-      }
-    } catch {}
 
-    }
   }
-
   function boot(){
     installStructuredModifierMenu();
     installSessionUpgrades();
@@ -972,10 +960,10 @@
   if (window.__modeAtlasAboutLoaded) return;
   window.__modeAtlasAboutLoaded = true;
 
-  const APP_VERSION = '2.10.17';
+  const APP_VERSION = (window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || '2.11.2';
   const SAVE_SCHEMA_VERSION = '3';
-  const BUILD_LABEL = 'Achievements & Mastery Polish Build';
-  const BUILD_DATE = '2026-04-28';
+  const BUILD_LABEL = 'Professional Polish Update';
+  const BUILD_DATE = '2026-05-01';
   const DEVELOPER = 'Jack Wright';
 
   function $(sel, root=document){ return root.querySelector(sel); }
@@ -1026,16 +1014,16 @@
       localSaveUpdated: fmtDate(latestTimestamp([
         'settingsUpdatedAt','resultsUpdatedAt','srsUpdatedAt','dailyUpdatedAt','profileUpdatedAt','modeAtlasLastSyncCheck','kanaWordBankUpdatedAt'
       ])),
-      pwaReady: ('serviceWorker' in navigator) ? 'Supported' : 'Not supported in this browser',
+      installSupport: window.ModeAtlasEnv?.canUsePwa ? 'Available' : 'Not available here',
       storage: (()=>{ try{ localStorage.setItem('__ma_probe','1'); localStorage.removeItem('__ma_probe'); return 'Available'; }catch{return 'Blocked';} })()
     };
   }
 
   const whatsNewItems = [
-    'Reworked Achievements into compact square tiles with branch sections.',
-    'Achievement details now open in a focused popup instead of expanding inline.',
-    'Added additional achievement tiers across General, Kana Trainer, and Word Bank.',
-    'Polished achievement progress, status labels, and Profile app tools.'
+    'Cleaner profile and account status information.',
+    'Clearer save, import, and backup wording.',
+    'Improved install guidance for faster access on your devices.',
+    'General polish across menus, update notes, and app status panels.'
   ];
 
   function ensureAboutModal(){
@@ -1065,18 +1053,18 @@
         <div class="ma-about-panel active" data-ma-about-panel="overview">
           <div class="ma-about-grid">
             <article class="ma-about-card"><span>App version</span><strong data-ma-info="version"></strong><small>Current app release installed in this build.</small></article>
-            <article class="ma-about-card"><span>Save schema</span><strong data-ma-info="saveSchema"></strong><small>Used for local/cloud save migration compatibility.</small></article>
+            <article class="ma-about-card"><span>Save version</span><strong data-ma-info="saveSchema"></strong><small>Helps keep backups compatible across app updates.</small></article>
             <article class="ma-about-card"><span>Build</span><strong data-ma-info="build"></strong><small data-ma-info="buildDate"></small></article>
-            <article class="ma-about-card"><span>PWA support</span><strong data-ma-info="pwaReady"></strong><small>Install/offline support depends on browser and hosting.</small></article>
+            <article class="ma-about-card"><span>Install support</span><strong data-ma-info="installSupport"></strong><small>Add Mode Atlas to your device for quicker access.</small></article>
           </div>
 
           <div class="ma-about-section">
-            <h3>Save & sync status</h3>
+            <h3>Account & save status</h3>
             <div class="ma-about-table">
               <div><span>Save mode</span><strong data-ma-info="saveMode"></strong></div>
-              <div><span>Cloud status</span><strong data-ma-info="cloudStatus"></strong></div>
+              <div><span>Sync status</span><strong data-ma-info="cloudStatus"></strong></div>
               <div><span>Signed in</span><strong data-ma-info="signedIn"></strong></div>
-              <div><span>Online</span><strong data-ma-info="online"></strong></div>
+              <div><span>Connection</span><strong data-ma-info="online"></strong></div>
               <div><span>Last cloud sync</span><strong data-ma-info="lastCloudSync"></strong></div>
               <div><span>Local save updated</span><strong data-ma-info="localSaveUpdated"></strong></div>
               <div><span>Storage access</span><strong data-ma-info="storage"></strong></div>
@@ -1095,16 +1083,16 @@
         <div class="ma-about-panel" data-ma-about-panel="whatsnew">
           <div class="ma-about-section">
             <h3>What’s new in this build</h3>
-            <p class="ma-about-muted">This panel replaces the old standalone Profile menu button. It can be opened any time from About.</p>
+            <p class="ma-about-muted">Recent improvements that affect everyday use.</p>
             <ul class="ma-about-list">${whatsNewItems.map(item=>`<li>${item}</li>`).join('')}</ul>
-            <button type="button" class="ma-about-primary" data-ma-open-legacy-whats-new>Open full QOL changelog</button>
+            <button type="button" class="ma-about-primary" data-ma-open-legacy-whats-new>Open full update notes</button>
           </div>
         </div>
 
         <div class="ma-about-panel" data-ma-about-panel="legal">
           <div class="ma-about-section">
             <h3>Privacy & data</h3>
-            <p>Mode Atlas stores learning progress locally on this device unless you sign in and enable cloud sync.</p>
+            <p>Mode Atlas saves learning progress on this device. Signing in lets supported progress follow you across devices.</p>
             <p>Local backups are user-controlled exports. Importing a backup should merge with newer local/cloud sections rather than blindly replacing current progress.</p>
           </div>
           <div class="ma-about-section">
@@ -1177,7 +1165,7 @@
 })();
 (function(){
   'use strict';
-  const VERSION = '2.10.17';
+  const VERSION = (window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || '2.11.2';
   const HIRA = ['あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ','た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ','ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'];
   const KATA = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','マ','ミ','ム','メ','モ','ヤ','ユ','ヨ','ラ','リ','ル','レ','ロ','ワ','ヲ','ン'];
   const DAK = ['が','ぎ','ぐ','げ','ご','ざ','じ','ず','ぜ','ぞ','だ','ぢ','づ','で','ど','ば','び','ぶ','べ','ぼ','ぱ','ぴ','ぷ','ぺ','ぽ','ガ','ギ','グ','ゲ','ゴ','ザ','ジ','ズ','ゼ','ゾ','ダ','ヂ','ヅ','デ','ド','バ','ビ','ブ','ベ','ボ','パ','ピ','プ','ペ','ポ'];

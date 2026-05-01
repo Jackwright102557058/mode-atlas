@@ -2,11 +2,12 @@
   if (window.__modeAtlasQolLoaded) return;
   window.__modeAtlasQolLoaded = true;
 
-  const APP_VERSION = '2.10.17';
+  const APP_VERSION = (window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || '2.11.2';
   const THEME_KEY = 'modeAtlasThemePreference';
   const LAST_PAGE_KEY = 'modeAtlasLastKanaPage';
   const DEV_PIN = '3522';
   const PAGE = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  function canUseDevTools(){ return !!((window.ModeAtlasEnv && window.ModeAtlasEnv.allowDevTools) || sessionStorage.getItem('modeAtlasDevTools') === '1' || localStorage.getItem('modeAtlasDevTools') === '1'); }
 
   function $(sel, root=document){ return root.querySelector(sel); }
   function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
@@ -47,7 +48,7 @@
   }
   function makeToolsPanel(cls){
     const panel=document.createElement('div'); panel.className='ma-qol-panel ma-tools-panel';
-    panel.innerHTML = '<div class="ma-qol-title">App</div><div class="ma-qol-grid"><button class="'+cls+'" type="button" data-ma-about-open>About Mode Atlas</button><button class="'+cls+'" type="button" data-ma-achievements-open>Achievements</button><button class="'+cls+'" type="button" data-ma-repair-data>Repair save data</button></div><div class="ma-qol-note">About includes app version, save schema, sync status, legal notes, credits, and What’s New.</div>';
+    panel.innerHTML = '<div class="ma-qol-title">App</div><div class="ma-qol-grid"><button class="'+cls+'" type="button" data-ma-about-open>About Mode Atlas</button><button class="'+cls+'" type="button" data-ma-achievements-open>Achievements</button><button class="'+cls+'" type="button" data-ma-repair-data>Repair save data</button></div><div class="ma-qol-note">About includes app version, save status, credits, and What’s New.</div>';
     return panel;
   }
   function updateThemeButtons(){
@@ -208,7 +209,7 @@
   window.ModeAtlas.repairSaveData = repairSaveData;
 
   function showWhatsNew(){
-    showModal('What’s new', '<p>This build improves appearance controls, Kana Trainer dashboard cards, result handling, profile actions, toast messages, PWA support, and protected diagnostics.</p><p>Reading pages keep the green theme, Writing pages keep the blue theme, and Light/Dark/System appearance changes the surrounding app shell.</p>');
+    showModal('What’s new', '<p>This update improves appearance controls, Kana Trainer dashboard cards, result handling, profile actions, and save/import feedback.</p><p>Reading keeps the green theme, Writing keeps the blue theme, and Light/Dark/System appearance now feels more consistent across the app.</p>');
   }
   function showModal(title, html){
     let b=$('#maSimpleModal'); if(!b){ b=document.createElement('div'); b.id='maSimpleModal'; b.className='ma-dev-backdrop'; b.innerHTML='<div class="ma-dev-modal"><div class="ma-dev-head"><h2></h2><button class="ma-qol-btn" type="button" data-ma-close-modal>Close</button></div><div class="ma-simple-body"></div></div>'; document.body.appendChild(b); b.addEventListener('click', e=>{ if(e.target===b||e.target.closest('[data-ma-close-modal]')) b.classList.remove('open'); }); }
@@ -230,23 +231,10 @@
     return { version:APP_VERSION, page:PAGE, url:location.href, theme:getThemePref()+' / '+effectiveTheme(), online:navigator.onLine, cloudState:st.text||'n/a', cloudLastSync:fmtDate(st.lastSync||localStorage.getItem('modeAtlasLastCloudSyncAt')), signedIn:!!st.user, localStorageKeys:localStorage.length, approximateLocalBytes:bytes, safeMode:sessionStorage.getItem('modeAtlasSafeMode')==='1', readingAccuracy:s.readingAccuracy, writingAccuracy:s.writingAccuracy, readingAnswers:s.readingAnswers, writingAnswers:s.writingAnswers, readingTests:s.readingTests, writingTests:s.writingTests };
   }
   function escapeHTML(s){ return String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-  window.dev = openDevMenu;
-  function installHiddenDevButton(){ if($('#maHiddenDevTrigger')) return; const btn=document.createElement('button'); btn.id='maHiddenDevTrigger'; btn.className='ma-hidden-dev-trigger'; btn.type='button'; btn.setAttribute('aria-label',''); btn.addEventListener('click', openDevMenu); document.body.appendChild(btn); }
+  window.dev = function(){ if(!canUseDevTools()){ toast('Developer tools are hidden in this build.'); return; } return openDevMenu(); };
+  function installHiddenDevButton(){ if(!canUseDevTools()) return; if($('#maHiddenDevTrigger')) return; const btn=document.createElement('button'); btn.id='maHiddenDevTrigger'; btn.className='ma-hidden-dev-trigger'; btn.type='button'; btn.setAttribute('aria-label',''); btn.addEventListener('click', openDevMenu); document.body.appendChild(btn); }
 
   function registerPwa(){
-    if(false && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-      
-    // GitHub-safe reset: clear older service workers/caches so stale builds cannot trap the app on loading.
-    try {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister())).catch(()=>{});
-      }
-      if (window.caches) {
-        caches.keys().then(keys => keys.filter(k => /^mode-atlas-/i.test(k)).forEach(k => caches.delete(k))).catch(()=>{});
-      }
-    } catch {}
-
-    }
     let deferred=null;
     window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferred=e; addInstallButton(()=>{ deferred.prompt(); deferred=null; }); });
   }

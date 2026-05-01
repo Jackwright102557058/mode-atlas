@@ -1,4 +1,5 @@
-const CACHE_NAME = 'mode-atlas-v2.10.17';
+const MODE_ATLAS_VERSION = '2.11.2';
+const CACHE_NAME = 'mode-atlas-v' + MODE_ATLAS_VERSION;
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -7,16 +8,18 @@ const CORE_ASSETS = [
   './reverse.html',
   './test.html',
   './wordbank.html',
-  './cloud-sync.js',
-  './firebase-config.js',
   './site.webmanifest',
-  './assets/mode-atlas-qol.css',
-  './assets/mode-atlas-qol.js',
-  './assets/mode-atlas-qol-batch.js',
-  './assets/mode-atlas-stable-controls.js',
-  './assets/mode-atlas-auth-single-button.js',
-  './assets/mode-atlas-about.js',
-  './assets/mode-atlas-achievements-mastery.js'
+  './assets/mode-atlas-icon.svg',
+  './assets/favicon-32.png',
+  './assets/apple-touch-icon.png',
+  './assets/android-chrome-512.png',
+  './assets/social-preview.svg',
+  './assets/css/mode-atlas-page-shared.css',
+  './assets/css/mode-atlas-qol.css',
+  './assets/app/mode-atlas-storage.js',
+  './assets/app/mode-atlas-qol.js',
+  './assets/app/mode-atlas-app-runtime.js',
+  './assets/app/mode-atlas-sounds.js'
 ];
 
 self.addEventListener('install', event => {
@@ -35,7 +38,7 @@ self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     try {
       const keys = await caches.keys();
-      await Promise.all(keys.filter(k => k !== CACHE_NAME && /^mode-atlas-/.test(k)).map(k => caches.delete(k)));
+      await Promise.all(keys.filter(k => k !== CACHE_NAME && /^mode-atlas-/i.test(k)).map(k => caches.delete(k)));
       await self.clients.claim();
     } catch (err) {}
   })());
@@ -43,6 +46,9 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith((async () => {
     try {
       const fresh = await fetch(event.request);
@@ -52,6 +58,10 @@ self.addEventListener('fetch', event => {
     } catch (err) {
       const cached = await caches.match(event.request);
       if (cached) return cached;
+      if (event.request.mode === 'navigate') {
+        const fallback = await caches.match('./index.html');
+        if (fallback) return fallback;
+      }
       throw err;
     }
   })());
