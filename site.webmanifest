@@ -1,7 +1,7 @@
 {
   "name": "Mode Atlas",
   "short_name": "Mode Atlas",
-  "description": "A focused Japanese study ecosystem for kana, words, and future learning branches.",
+  "description": "A focused Japanese study ecosystem for kana, words, and connected learning branches.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -1,22 +1,43 @@
-
-import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js';
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-  signOut,
-  onAuthStateChanged
-} from 'https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js';
+let initializeApp, getApps, getApp;
+let getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged;
+let getFirestore, doc, getDoc, setDoc;
+let firebaseModulesPromise = null;
+async function loadFirebaseModules() {
+  if (location.protocol === 'file:') return false;
+  if (!firebaseModulesPromise) {
+    firebaseModulesPromise = Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js')
+    ]).then(([appMod, authMod, firestoreMod]) => {
+      initializeApp = appMod.initializeApp;
+      getApps = appMod.getApps;
+      getApp = appMod.getApp;
+      getAuth = authMod.getAuth;
+      GoogleAuthProvider = authMod.GoogleAuthProvider;
+      signInWithPopup = authMod.signInWithPopup;
+      signInWithRedirect = authMod.signInWithRedirect;
+      getRedirectResult = authMod.getRedirectResult;
+      signOut = authMod.signOut;
+      onAuthStateChanged = authMod.onAuthStateChanged;
+      getFirestore = firestoreMod.getFirestore;
+      doc = firestoreMod.doc;
+      getDoc = firestoreMod.getDoc;
+      setDoc = firestoreMod.setDoc;
+      return true;
+    }).catch((error) => {
+      console.warn('Firebase modules could not be loaded.', error);
+      return false;
+    });
+  }
+  return firebaseModulesPromise;
+}
 
 const CONFIG = window.KANA_FIREBASE_CONFIG || null;
 const CONFIG_READY = !!(CONFIG && CONFIG.apiKey && CONFIG.apiKey !== 'REPLACE_ME' && CONFIG.projectId && CONFIG.projectId !== 'REPLACE_ME' && CONFIG.appId && CONFIG.appId !== 'REPLACE_ME');
 const DOC_PATH = ['users', null, 'appData', 'kanaTrainer'];
 const LOCAL_IMPORT_GUARD_KEY = 'modeAtlasLocalImportGuardUntil';
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
+let provider = null;
 
 const SECTION_DEFS = {
   reading: {
@@ -559,6 +580,18 @@ async function setupFirebase() {
     resolveAuthReady?.();
     emitStatus();
     return false;
+  }
+  const modulesLoaded = await loadFirebaseModules();
+  if (!modulesLoaded) {
+    authResolved = true;
+    resolveAuthReady?.();
+    setCloudState(false, location.protocol === 'file:' ? 'Cloud sync unavailable in local file mode' : 'Firebase modules unavailable');
+    emitStatus();
+    return false;
+  }
+  if (!provider && GoogleAuthProvider) {
+    provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
   }
   if (!app) {
     app = getApps().length ? getApp() : initializeApp(CONFIG);
