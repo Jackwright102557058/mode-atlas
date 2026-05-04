@@ -3,7 +3,7 @@
   if (window.__modeAtlasHeadBootstrapLoaded) return;
   window.__modeAtlasHeadBootstrapLoaded = true;
 
-  var APP_VERSION = '2.11.6';
+  var APP_VERSION = (window.ModeAtlasVersion || window.MODE_ATLAS_VERSION || 'dev-local');
   var protocol = location.protocol;
   var host = location.hostname;
   var search = location.search || '';
@@ -40,6 +40,35 @@
     try { return localStorage.getItem(key); } catch(e) { return null; }
   }
 
+
+  function normalizeDisplayMode(mode){
+    mode = String(mode || 'auto').toLowerCase();
+    if (mode === 'compact') return 'tablet';
+    if (mode === 'mobile') return 'phone';
+    return /^(auto|desktop|tablet|phone)$/.test(mode) ? mode : 'auto';
+  }
+
+  function resolveDisplayMode(mode){
+    mode = normalizeDisplayMode(mode);
+    if (mode !== 'auto') return mode;
+    var width = Math.min(window.innerWidth || 1200, document.documentElement.clientWidth || window.innerWidth || 1200);
+    if (width <= 700) return 'phone';
+    if (width <= 1180) return 'tablet';
+    return 'desktop';
+  }
+
+  function applyEarlyDisplayMode(){
+    try {
+      var mode = normalizeDisplayMode(safeStorageGet('modeAtlasDisplayMode') || 'auto');
+      var effective = resolveDisplayMode(mode);
+      document.documentElement.dataset.displayMode = mode;
+      document.documentElement.dataset.effectiveDisplayMode = effective;
+      document.documentElement.classList.toggle('ma-display-desktop', effective === 'desktop');
+      document.documentElement.classList.toggle('ma-display-tablet', effective === 'tablet');
+      document.documentElement.classList.toggle('ma-display-phone', effective === 'phone');
+    } catch(e) {}
+  }
+
   window.ModeAtlasEnv = Object.freeze({
     appVersion: APP_VERSION,
     saveSchemaVersion: '3',
@@ -74,11 +103,23 @@
 
   document.documentElement.dataset.maEnv = isLocalFile ? 'file-fallback' : (isProduction ? 'production' : (isLocalServer ? 'local-server' : 'hosted'));
   document.documentElement.dataset.maVersion = APP_VERSION;
+  applyEarlyDisplayMode();
+
+
+  function syncVersionLabels(){
+    try {
+      var version = String(APP_VERSION || '');
+      var nodes = document.querySelectorAll('[data-ma-app-version]');
+      nodes.forEach(function(node){ node.textContent = version; });
+    } catch(e) {}
+  }
 
   function onReady(fn){
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
     else fn();
   }
+
+  onReady(syncVersionLabels);
 
   function attachManifest(){
     try {

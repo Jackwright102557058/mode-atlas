@@ -1,0 +1,75 @@
+(function ModeAtlasPageState(){
+  'use strict';
+  if (window.__modeAtlasPageStateLoaded) return;
+  window.__modeAtlasPageStateLoaded = true;
+
+  const LAST_PAGE_KEY = 'modeAtlasLastKanaPage';
+
+  function pageName(){
+    try { if (window.ModeAtlasPageName) return String(window.ModeAtlasPageName()).toLowerCase(); } catch {}
+    const path = String(location.pathname || '').replace(/\/$/, '');
+    const last = path.split('/').pop() || 'index.html';
+    if (last === 'reading') return 'default.html';
+    if (last === 'writing') return 'reverse.html';
+    if (last === 'results') return 'test.html';
+    if (last === 'kana') return 'kana.html';
+    return last.toLowerCase();
+  }
+
+  function setPageClass(){
+    const page = pageName();
+    document.body.classList.toggle('ma-reading-page', page === 'default.html');
+    document.body.classList.toggle('ma-writing-page', page === 'reverse.html');
+    document.body.classList.toggle('ma-index-page', page === 'index.html');
+    document.body.classList.toggle('ma-kana-page', page === 'kana.html');
+    document.body.classList.toggle('ma-results-page', page === 'test.html');
+    document.body.classList.toggle('ma-wordbank-page', page === 'wordbank.html');
+  }
+
+  function rememberKanaPage(){
+    const page = pageName();
+    const map = { 'default.html': '/reading/', 'reverse.html': '/writing/', 'test.html': '/results/' };
+    if (map[page]) {
+      try { localStorage.setItem(LAST_PAGE_KEY, map[page]); } catch {}
+    }
+  }
+
+  function normalizeInputs(){
+    document.querySelectorAll('input,textarea').forEach((el, index) => {
+      if (el.dataset.maInputNormalised === '1') return;
+      el.dataset.maInputNormalised = '1';
+      try {
+        el.autocomplete = 'off';
+        el.autocorrect = 'off';
+        el.autocapitalize = 'off';
+        el.spellcheck = false;
+        const name = String(el.getAttribute('name') || '').toLowerCase();
+        if (!name || ['name','email','address','card','location','password'].includes(name)) {
+          el.setAttribute('name', `mode_atlas_input_${index}`);
+        }
+      } catch {}
+    });
+  }
+
+  function cleanDecorativeTextIcons(){
+    document.querySelectorAll('.ma-ui-icon').forEach(node => node.remove());
+    document.querySelectorAll('a,button,.nav-link,.study-link,.branch-link,.ma-menu-action').forEach(el => {
+      Array.from(el.childNodes).forEach(node => {
+        if (node.nodeType === 3 && /^[\s▦◉◆↻!]+$/.test(node.textContent || '')) node.textContent = '';
+      });
+    });
+  }
+
+  function boot(){
+    setPageClass();
+    rememberKanaPage();
+    normalizeInputs();
+    cleanDecorativeTextIcons();
+  }
+
+  window.ModeAtlasPageState = { pageName, setPageClass, rememberKanaPage, normalizeInputs, cleanDecorativeTextIcons, refresh: boot };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
+  window.addEventListener('pageshow', () => setTimeout(boot, 50));
+})();

@@ -13,7 +13,12 @@
         store?.set(storageKey, hidden ? '1' : '0');
     }
 
-    function openProfile() {
+    function openProfile(event) {
+        if (window.ModeAtlasProfile && typeof window.ModeAtlasProfile.open === 'function') {
+            event?.preventDefault?.();
+            window.ModeAtlasProfile.open();
+            return;
+        }
         if (!overlay) return;
         overlay.classList.add('open');
         overlay.setAttribute('aria-hidden', 'false');

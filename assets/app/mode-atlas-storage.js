@@ -51,3 +51,22 @@
 
   window.ModeAtlasStorage = Object.freeze({ KEYS, safeParse, get, set, remove, has, json, setJSON, number, now, removeMany, collect, apply, snapshot });
 })();
+
+/* Section timestamp maintenance for direct localStorage writes. */
+(function(){
+  if(Storage.prototype.__maTimestampPatched) return;
+  const nativeSet = Storage.prototype.setItem;
+  Storage.prototype.setItem = function(key, value){
+    const out = nativeSet.apply(this, arguments);
+    try{
+      if(this === localStorage){
+        if(/^(settings|reverseSettings|modeAtlasThemePreference|modeAtlasDisplayMode|modeAtlasSoundMode)$/.test(key)) nativeSet.call(localStorage,'settingsUpdatedAt',String(Date.now()));
+        if(/(testModeResults|charStats|reverseCharStats|charTimes|reverseCharTimes|scoreHistory)/.test(key)) nativeSet.call(localStorage,'resultsUpdatedAt',String(Date.now()));
+        if(/(charSrs|reverseCharSrs)/.test(key)) nativeSet.call(localStorage,'srsUpdatedAt',String(Date.now()));
+        if(/dailyChallengeHistory/.test(key)) nativeSet.call(localStorage,'dailyUpdatedAt',String(Date.now()));
+      }
+    }catch{}
+    return out;
+  };
+  Storage.prototype.__maTimestampPatched = true;
+})();

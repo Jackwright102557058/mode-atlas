@@ -331,35 +331,8 @@
   }
 
   function addSoundStyles(){
-    if(document.getElementById('maSoundActiveStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'maSoundActiveStyle';
-    style.textContent = `
-      .ma-sound-row .ma-settings-buttons{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;}
-      .ma-sound-toggle,[data-ma-sound-choice],[data-sound],[data-ma-dev-sound]{position:relative!important;opacity:1!important;}
-      .ma-sound-toggle.active,.ma-sound-toggle.selected,.ma-sound-toggle[data-active="true"],
-      [data-ma-sound-choice].active,[data-ma-sound-choice][data-active="true"],
-      [data-sound].active,[data-sound][data-active="true"],
-      [data-ma-dev-sound].active,[data-ma-dev-sound][data-active="true"]{
-        color:#07111f!important;
-        background:linear-gradient(135deg,#8ee8b2,#7db5ff)!important;
-        border-color:rgba(125,181,255,.65)!important;
-        box-shadow:0 0 0 3px rgba(125,181,255,.22),0 14px 30px rgba(0,0,0,.20)!important;
-      }
-      .ma-sound-toggle[data-active="true"]::after,
-      [data-ma-sound-choice][data-active="true"]::after,
-      [data-sound][data-active="true"]::after,
-      [data-ma-dev-sound][data-active="true"]::after{content:'✓';margin-left:6px;font-weight:950;}
-      html[data-ma-theme="light"] .ma-sound-toggle[data-active="true"],
-      html[data-ma-theme="light"] [data-ma-sound-choice][data-active="true"],
-      html[data-ma-theme="light"] [data-sound][data-active="true"],
-      html[data-ma-theme="light"] [data-ma-dev-sound][data-active="true"]{
-        background:linear-gradient(135deg,#d9fbe6,#dbeafe)!important;
-        color:#07111f!important;
-        border-color:rgba(37,99,235,.38)!important;
-      }
-    `;
-    document.head.appendChild(style);
+    // Visual styling for menu sound controls belongs to the shared Settings menu.
+    // This sound module only updates state and behavior on existing controls.
   }
 
   function refreshSoundControls(){
@@ -377,17 +350,11 @@
   }
 
   function addProfileSoundControls(){
-    document.querySelectorAll('.profile-drawer,#profileDrawer,.drawer-panel').forEach(drawer => {
-      if(!drawer || drawer.querySelector('[' + PROFILE_MARK + ']')) return;
-      const target = drawer.querySelector('.ma-settings-panel') || drawer.querySelector('.ma-theme-panel') || drawer;
-      const row = document.createElement('div');
-      row.className = 'ma-settings-row ma-sound-row';
-      row.setAttribute(PROFILE_MARK, '1');
-      row.innerHTML = '<div style="font-size:12px;color:var(--muted,#9aa3b8);font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Sound</div><div class="ma-settings-buttons"><button type="button" class="ma-sound-toggle" data-ma-sound-choice="soft">On</button><button type="button" class="ma-sound-toggle" data-ma-sound-choice="loud">Loud</button><button type="button" class="ma-sound-toggle" data-ma-sound-choice="off">Off</button></div>';
-      target.appendChild(row);
-    });
+    // Profile and Settings controls are rendered by the shared menu files.
+    // The sound system only binds state and behaviour to existing controls.
     refreshSoundControls();
   }
+
 
   function addDevSoundTools(){
     document.querySelectorAll('#maDevPanel .ma-dev-card,#maDevMenu .ma-dev-modal,.ma-dev-panel .ma-dev-card').forEach(panel => {
@@ -534,7 +501,7 @@
     const unlock = () => primeAudio();
     const recentPointerSound = new WeakMap();
     function clickableFromEvent(event){
-      return event.target.closest?.('button,a,input[type="button"],input[type="submit"],input[type="reset"],input[type="checkbox"],input[type="radio"],select,summary,label[for],.btn,.toggle-btn,.ma-preset-btn,.ma-structured-toggle,.option-btn,.choice-btn,.drawer-action,.profile-trigger,.profile-action,.branch-link,.nav-link,.study-link,.study-nav-btn,.launch-card,.test-tile,.mode-card,.action-card,.menu-item,.tab,.tab-button,.chip,.pill,.card,.button-like,.inline-toggle-btn,.row-view-btn,.star-btn,.debug-delete-btn,.summary-toggle,.ma-display-option,[data-action],[data-mode],[data-view],[data-tab],[data-ma-click-sound],[onclick],[role="button"],[tabindex]:not(input):not(textarea)');
+      return event.target.closest?.('button,a,input[type="button"],input[type="submit"],input[type="reset"],input[type="checkbox"],input[type="radio"],select,summary,label[for],.btn,.toggle-btn,.ma-preset-toggle,.ma-structured-toggle,.option-btn,.choice-btn,.ma-menu-action,.profile-trigger,.branch-link,.nav-link,.study-link,.study-nav-btn,.launch-card,.test-tile,.mode-card,.action-card,.menu-item,.tab,.tab-button,.chip,.pill,.card,.button-like,.inline-toggle-btn,.row-view-btn,.star-btn,.debug-delete-btn,.summary-toggle,.ma-display-option,[data-action],[data-mode],[data-view],[data-tab],[data-ma-click-sound],[onclick],[role="button"],[tabindex]:not(input):not(textarea)');
     }
     function shouldSoundClickable(el){
       return !!(el && !el.disabled && el.getAttribute('aria-disabled') !== 'true' && !el.matches?.('input[type="file"],input[type="text"],input[type="number"],textarea'));

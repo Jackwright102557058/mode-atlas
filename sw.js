@@ -1,13 +1,24 @@
-const MODE_ATLAS_VERSION = '2.12.0-import-preview';
-const CACHE_NAME = 'mode-atlas-v' + MODE_ATLAS_VERSION;
+try { importScripts('./assets/app/mode-atlas-version.js'); } catch (e) {}
+const MODE_ATLAS_VERSION = self.ModeAtlasVersion || self.MODE_ATLAS_VERSION || 'dev-local';
+const CACHE_NAME = 'mode-atlas-' + MODE_ATLAS_VERSION;
 
 const CORE_ASSETS = [
   './',
   './assets/android-chrome-512.png',
-  './assets/app/mode-atlas-app-runtime.js',
   './assets/app/mode-atlas-early-loader.js',
+  './assets/app/mode-atlas-presets.js',
   './assets/app/mode-atlas-head-bootstrap.js',
-  './assets/app/mode-atlas-qol.js',
+  './assets/app/mode-atlas-toast.js',
+  './assets/app/mode-atlas-theme.js',
+  './assets/app/mode-atlas-save-repair.js',
+  './assets/app/mode-atlas-page-state.js',
+  './assets/app/mode-atlas-dev-console.js',
+  './assets/app/mode-atlas-pwa.js',
+  './assets/app/mode-atlas-about.js',
+  './assets/app/mode-atlas-kana-metrics.js',
+  './assets/pages/mode-atlas-kana-dashboard.js',
+  './assets/results/mode-atlas-results-insights.js',
+  './assets/app/mode-atlas-confusable-mode.js',
   './assets/app/mode-atlas-sounds.js',
   './assets/app/mode-atlas-stable-controls.js',
   './assets/app/mode-atlas-storage.js',
@@ -16,7 +27,12 @@ const CORE_ASSETS = [
   './assets/css/mode-atlas-home-page.css',
   './assets/css/mode-atlas-kana-page.css',
   './assets/css/mode-atlas-page-shared.css',
-  './assets/css/mode-atlas-qol.css',
+  './assets/css/mode-atlas-app-polish.css',
+  './assets/css/mode-atlas-responsive.css',
+  './assets/css/mode-atlas-kana-dashboard.css',
+  './assets/css/mode-atlas-results-insights.css',
+  './assets/css/mode-atlas-achievements.css',
+  './assets/css/mode-atlas-theme.css',
   './assets/css/mode-atlas-reverse-input-control-fix.css',
   './assets/css/mode-atlas-reverse-page.css',
   './assets/css/mode-atlas-study-shared.css',
@@ -42,10 +58,12 @@ const CORE_ASSETS = [
   './assets/trainer/mode-atlas-session-controls.js',
   './assets/trainer/mode-atlas-trainer-core.js',
   './assets/trainer/mode-atlas-trainer-shared.js',
+  './assets/ui/mode-atlas-profile-menu.js',
+  './assets/ui/mode-atlas-settings-menu.js',
   './assets/ui/mode-atlas-profile-drawer-bindings.js',
   './assets/ui/mode-atlas-study-cloud-bindings.js',
   './assets/ui/mode-atlas-study-nav-hidden.js',
-  './assets/ui/mode-atlas-verified-preset-confusable.js',
+  './assets/ui/mode-atlas-v2.16.1-preset-menu-clean',
   './cloud-sync.js',
   './reading/',
   './default.html',
@@ -58,7 +76,11 @@ const CORE_ASSETS = [
   './site.webmanifest',
   './results/',
   './test.html',
-  './wordbank.html'
+  './wordbank.html',
+  './privacy/',
+  './privacy/index.html',
+  './terms/',
+  './terms/index.html'
 ];
 
 // Files that should always bypass the service worker.

@@ -227,7 +227,7 @@ if head_bootstrap.exists():
 
     text = re.sub(
         r"var APP_VERSION = '[^']+';",
-        "var APP_VERSION = '2.11.5';",
+        "var APP_VERSION = (window.ModeAtlasVersion || window.MODE_ATLAS_VERSION || 'dev-local');",
         text
     )
 
@@ -266,16 +266,12 @@ if head_bootstrap.exists():
 
     write_text(head_bootstrap, text)
 
-qol = ROOT / "assets/app/mode-atlas-qol.js"
-if qol.exists():
-    print("Updating QoL navigation...")
-    text = read_text(qol)
-    text = text.replace(
-        "if(['default.html','reverse.html','test.html'].includes(PAGE)) localStorage.setItem(LAST_PAGE_KEY, PAGE);",
-        "if(['default.html','reverse.html','test.html'].includes(PAGE)){ const map={ 'default.html':'/reading/', 'reverse.html':'/writing/', 'test.html':'/results/' }; localStorage.setItem(LAST_PAGE_KEY, map[PAGE] || '/reading/'); }"
-    )
-    text = text.replace("href:'default.html", "href:'/reading/")
-    write_text(qol, text)
+page_state = ROOT / "assets/app/mode-atlas-page-state.js"
+if page_state.exists():
+    print("Checking page-state navigation...")
+    text = read_text(page_state)
+    text = text.replace("'default.html': '/reading/'", "'default.html': '/reading/'")
+    write_text(page_state, text)
 
 confusable = ROOT / "assets/ui/mode-atlas-verified-preset-confusable.js"
 if confusable.exists():
@@ -293,7 +289,7 @@ if sw.exists():
 
     text = re.sub(
         r"const MODE_ATLAS_VERSION = '[^']+';",
-        "const MODE_ATLAS_VERSION = '2.11.5';",
+        "try { importScripts('./assets/app/mode-atlas-version.js'); } catch (e) {}\nconst MODE_ATLAS_VERSION = self.ModeAtlasVersion || self.MODE_ATLAS_VERSION || 'dev-local';",
         text
     )
 

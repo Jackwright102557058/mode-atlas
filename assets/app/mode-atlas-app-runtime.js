@@ -3,106 +3,187 @@
 /* === mode-atlas-display.js === */
 (function () {
   const STORAGE_KEY = 'modeAtlasDisplayMode';
-  function getMode() { return window.ModeAtlasStorage?.get ? window.ModeAtlasStorage.get(STORAGE_KEY, 'auto') : (localStorage.getItem(STORAGE_KEY) || 'auto'); }
-  function setMode(mode) {
+  const LEGACY_ALIASES = { compact: 'tablet', mobile: 'phone' };
+  const VALID_MODES = new Set(['auto', 'desktop', 'tablet', 'phone']);
+  let resizeTimer = 0;
+
+  function normalizeMode(mode) {
+    const value = String(mode || 'auto').toLowerCase();
+    const normalized = LEGACY_ALIASES[value] || value;
+    return VALID_MODES.has(normalized) ? normalized : 'auto';
+  }
+
+  function readStoredMode() {
+    const raw = window.ModeAtlasStorage?.get ? window.ModeAtlasStorage.get(STORAGE_KEY, 'auto') : (localStorage.getItem(STORAGE_KEY) || 'auto');
+    const normalized = normalizeMode(raw);
+    if (raw && raw !== normalized && raw !== 'auto') writeStoredMode(normalized);
+    return normalized;
+  }
+
+  function writeStoredMode(mode) {
     if (window.ModeAtlasStorage?.set) window.ModeAtlasStorage.set(STORAGE_KEY, mode);
     else localStorage.setItem(STORAGE_KEY, mode);
-    applyMode();
-    window.dispatchEvent(new CustomEvent('modeAtlasDisplayModeChanged', { detail: { mode } }));
   }
+
+  function getMode() { return readStoredMode(); }
+
+  function resolveAutoMode() {
+    const width = Math.min(window.innerWidth || 1200, document.documentElement?.clientWidth || window.innerWidth || 1200);
+    if (width <= 700) return 'phone';
+    if (width <= 1180) return 'tablet';
+    return 'desktop';
+  }
+
+  function getEffectiveMode(mode = getMode()) {
+    const normalized = normalizeMode(mode);
+    return normalized === 'auto' ? resolveAutoMode() : normalized;
+  }
+
+  function setMode(mode) {
+    const normalized = normalizeMode(mode);
+    writeStoredMode(normalized);
+    applyMode();
+    window.dispatchEvent(new CustomEvent('modeAtlasDisplayModeChanged', { detail: { mode: normalized, effectiveMode: getEffectiveMode(normalized) } }));
+  }
+
   function applyMode() {
     const mode = getMode();
-    document.body.dataset.displayMode = mode;
-    document.querySelectorAll('.ma-display-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.modeAtlasDisplay === mode);
+    const effectiveMode = getEffectiveMode(mode);
+    const targets = [document.documentElement, document.body].filter(Boolean);
+    targets.forEach((target) => {
+      target.dataset.displayMode = mode;
+      target.dataset.effectiveDisplayMode = effectiveMode;
+      target.classList.toggle('ma-display-desktop', effectiveMode === 'desktop');
+      target.classList.toggle('ma-display-tablet', effectiveMode === 'tablet');
+      target.classList.toggle('ma-display-phone', effectiveMode === 'phone');
+    });
+    document.querySelectorAll('.ma-display-btn,.ma-display-option').forEach((button) => {
+      const buttonMode = normalizeMode(button.dataset.modeAtlasDisplay || button.dataset.display || 'auto');
+      button.classList.toggle('active', buttonMode === mode);
+      button.setAttribute('aria-pressed', buttonMode === mode ? 'true' : 'false');
     });
   }
-  function findProfileContainer() {
-    return document.querySelector('.profile-drawer .drawer-actions') ||
-           document.querySelector('.drawer-actions') ||
-           document.querySelector('.profile-panel .drawer-actions') ||
-           document.querySelector('.profile-drawer') ||
-           document.querySelector('.drawer-panel') ||
-           document.querySelector('[id*="profileDrawer"]');
+
+  function onResize() {
+    if (getMode() !== 'auto') return;
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(applyMode, 80);
   }
+
   function injectDisplayControls() { applyMode(); }
-  window.ModeAtlasDisplay = { getMode, setMode, applyMode, injectDisplayControls };
+  window.ModeAtlasDisplay = { getMode, setMode, applyMode, injectDisplayControls, getEffectiveMode, normalizeMode };
   applyMode();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectDisplayControls);
   else injectDisplayControls();
+  window.addEventListener('resize', onResize, { passive: true });
+  window.addEventListener('orientationchange', () => window.setTimeout(applyMode, 120));
   setTimeout(injectDisplayControls, 300);
   setTimeout(injectDisplayControls, 1200);
 })();
 
 /* === mode-atlas-profile-dev.js === */
-(function ModeAtlasProfileDev(){ if (window.__modeAtlasProfileDevInstalled) return; window.__modeAtlasProfileDevInstalled = true; function cleanDuplicateDisplay(){ document.querySelectorAll('.ma-display-controls').forEach(el => el.remove()); document.querySelectorAll('.ma-settings-panel').forEach(panel => { const rows = [...panel.querySelectorAll('.ma-settings-row')]; rows.filter(row => /Display/i.test(row.textContent || '')).slice(1).forEach(row => row.remove()); rows.filter(row => /Sound/i.test(row.textContent || '') && !row.hasAttribute('data-ma-sound-enhanced') && !row.hasAttribute('data-ma-sound-dev-tools')).forEach(row => row.remove()); }); } function normalizeProfileActions(){ document.querySelectorAll('.profile-drawer,#profileDrawer').forEach(drawer => { const actions = drawer.querySelector('.drawer-actions'); if (!actions) return; actions.classList.add('ma-profile-nav-cleaned'); [...actions.querySelectorAll('a')].forEach(link => { const href = (link.getAttribute('href') || '').toLowerCase(); const isAtlas = href === 'index.html' || href.endsWith('/index.html') || /mode-atlas\/?$/.test(href); const isKana = href === 'kana.html' || href.endsWith('/kana.html'); if (!isAtlas && !isKana) { link.remove(); return; } link.classList.add('drawer-action'); link.textContent = isAtlas ? 'Atlas' : 'Kana Trainer'; link.setAttribute('href', isAtlas ? 'index.html' : 'kana.html'); }); if (!actions.querySelector('a[href="/"]')) { const link = document.createElement('a'); link.className = 'drawer-action'; link.href = 'index.html'; link.textContent = 'Atlas'; actions.appendChild(link); } if (!actions.querySelector('a[href="/kana/"]')) { const link = document.createElement('a'); link.className = 'drawer-action'; link.href = 'kana.html'; link.textContent = 'Kana Trainer'; actions.appendChild(link); } }); } function isTestPage(){ return /test\.html(?:$|[?#])/i.test(location.pathname) || !!document.getElementById('testHeatmap'); } function ensureTestStorageDebugFallback(){ if (!isTestPage() || typeof window.renderDebugPanel === 'function') return; window.closeDebugPanel = function(){ const panel = document.getElementById('debugPanel'); if (panel) panel.remove(); }; window.renderDebugPanel = function(){ const keys = ['testModeResults','kanaTrainerTestModeResults','readingTestModeResults','kanaTrainerReadingTestModeResults','writingTestModeResults','kanaTrainerWritingTestModeResults']; let panel = document.getElementById('debugPanel'); if (!panel) { panel = document.createElement('div'); panel.id = 'debugPanel'; panel.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:10000;width:min(420px,calc(100vw - 32px));max-height:70vh;overflow:auto;padding:14px;border-radius:16px;background:rgba(12,12,12,.96);border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 40px rgba(0,0,0,.45);font-family:Arial,sans-serif;font-size:12px;line-height:1.45;color:#f3f3f3'; document.body.appendChild(panel); } const rows = keys.map(key => { const raw = localStorage.getItem(key); let count = 0; let err = ''; if (raw) { try { const parsed = JSON.parse(raw); count = Array.isArray(parsed) ? parsed.length : 0; } catch (error) { err = error.message || 'Invalid JSON'; } } return { key, present: raw !== null, count, len: raw ? raw.length : 0, err }; }); panel.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;"><div style="font-size:13px;font-weight:800;letter-spacing:.04em;">Storage Debug</div><button type="button" data-debug-close style="border:1px solid rgba(255,255,255,.14);background:#1f1f1f;color:#f3f3f3;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px;">×</button></div><div style="display:grid;gap:6px;">' + rows.map(item => '<div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);"><div style="font-weight:700;word-break:break-all;">' + item.key + '</div><div style="color:#bfbfbf;">Present: ' + (item.present ? 'yes' : 'no') + ' · Items: ' + item.count + ' · Raw length: ' + item.len + '</div>' + (item.err ? '<div style="color:#ff9b9b;">Parse error: ' + item.err + '</div>' : '') + '</div>').join('') + '</div>'; panel.querySelector('[data-debug-close]').onclick = window.closeDebugPanel; }; } function getPageDebug(){ ensureTestStorageDebugFallback(); const render = window.renderDebugPanel; const close = window.closeDebugPanel; if (typeof render !== 'function') return null; return { label: isTestPage() ? 'Storage debug' : 'SRS debug', closeLabel: isTestPage() ? 'Close storage debug' : 'Close debug', render, close: typeof close === 'function' ? close : null }; } function ensureDevPanel(){ if (document.getElementById('maDevPanel')) return; const pageDebug = getPageDebug(); const panel = document.createElement('div'); panel.className = 'ma-dev-panel'; panel.id = 'maDevPanel'; panel.innerHTML = '<div class="ma-dev-card" role="dialog" aria-modal="false" aria-labelledby="maDevTitle"><div class="ma-dev-head"><div class="ma-dev-title" id="maDevTitle">Dev menu</div><button class="ma-dev-btn" type="button" data-ma-dev-close>Close</button></div>' + (pageDebug ? '<div class="ma-dev-row"><div class="ma-dev-label">Page tools</div><div class="ma-dev-actions"><button class="ma-dev-btn" type="button" data-ma-dev-page-debug>' + pageDebug.label + '</button>' + (pageDebug.close ? '<button class="ma-dev-btn" type="button" data-ma-dev-page-debug-close>' + pageDebug.closeLabel + '</button>' : '') + '</div></div>' : '') + '<div class="ma-dev-row"><div class="ma-dev-label">Console</div><div style="color:var(--muted,#9aa3b8);font-size:13px;line-height:1.5;">Open this panel with <strong>dev()</strong>. It stays in the bottom-right so the page remains usable.</div></div></div>'; document.body.appendChild(panel); panel.addEventListener('click', event => { if (event.target.closest('[data-ma-dev-close]')) closeDev(); if (event.target.closest('[data-ma-dev-page-debug]')) { try { getPageDebug()?.render(); } catch (error) { console.warn('Debug panel unavailable', error); } } if (event.target.closest('[data-ma-dev-page-debug-close]')) { try { getPageDebug()?.close?.(); } catch (error) { console.warn('Close debug unavailable', error); } } }); } function openDev(){ ensureDevPanel(); document.getElementById('maDevPanel')?.classList.add('open'); } function closeDev(){ document.getElementById('maDevPanel')?.classList.remove('open'); } function polish(){ cleanDuplicateDisplay(); normalizeProfileActions(); ensureDevPanel(); } window.dev = openDev; window.atlasDev = openDev; document.addEventListener('keydown', event => { if (event.key === 'Escape') closeDev(); }); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', polish); else polish(); setTimeout(polish, 300); setTimeout(polish, 1200); })();
+(function ModeAtlasProfileDev(){
+  if (window.__modeAtlasProfileDevInstalled) return;
+  window.__modeAtlasProfileDevInstalled = true;
+
+  function isTestPage(){
+    return /test\.html(?:$|[?#])/i.test(location.pathname) || /\/results\/?$/i.test(location.pathname) || !!document.getElementById('testHeatmap');
+  }
+
+  function ensureTestStorageDebugFallback(){
+    if (!isTestPage() || typeof window.renderDebugPanel === 'function') return;
+    window.closeDebugPanel = function(){
+      const panel = document.getElementById('debugPanel');
+      if (panel) panel.remove();
+    };
+    window.renderDebugPanel = function(){
+      const keys = ['testModeResults','kanaTrainerTestModeResults','readingTestModeResults','kanaTrainerReadingTestModeResults','writingTestModeResults','kanaTrainerWritingTestModeResults'];
+      let panel = document.getElementById('debugPanel');
+      if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'debugPanel';
+        panel.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:10000;width:min(420px,calc(100vw - 32px));max-height:70vh;overflow:auto;padding:14px;border-radius:16px;background:rgba(12,12,12,.96);border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 40px rgba(0,0,0,.45);font-family:Arial,sans-serif;font-size:12px;line-height:1.45;color:#f3f3f3';
+        document.body.appendChild(panel);
+      }
+      const rows = keys.map(key => {
+        const raw = localStorage.getItem(key);
+        let count = 0;
+        let err = '';
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            count = Array.isArray(parsed) ? parsed.length : 0;
+          } catch (error) {
+            err = error.message || 'Invalid JSON';
+          }
+        }
+        return { key, present: raw !== null, count, len: raw ? raw.length : 0, err };
+      });
+      panel.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;"><div style="font-size:13px;font-weight:800;letter-spacing:.04em;">Storage Debug</div><button type="button" data-debug-close style="border:1px solid rgba(255,255,255,.14);background:#1f1f1f;color:#f3f3f3;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px;">×</button></div><div style="display:grid;gap:6px;">' + rows.map(item => '<div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);"><div style="font-weight:700;word-break:break-all;">' + item.key + '</div><div style="color:#bfbfbf;">Present: ' + (item.present ? 'yes' : 'no') + ' · Items: ' + item.count + ' · Raw length: ' + item.len + '</div>' + (item.err ? '<div style="color:#ff9b9b;">Parse error: ' + item.err + '</div>' : '') + '</div>').join('') + '</div>';
+      panel.querySelector('[data-debug-close]').onclick = window.closeDebugPanel;
+    };
+  }
+
+  function getPageDebug(){
+    ensureTestStorageDebugFallback();
+    const render = window.renderDebugPanel;
+    const close = window.closeDebugPanel;
+    if (typeof render !== 'function') return null;
+    return { label: isTestPage() ? 'Storage debug' : 'SRS debug', closeLabel: isTestPage() ? 'Close storage debug' : 'Close debug', render, close: typeof close === 'function' ? close : null };
+  }
+
+  function ensureDevPanel(){
+    if (document.getElementById('maDevPanel')) return;
+    const pageDebug = getPageDebug();
+    const panel = document.createElement('div');
+    panel.className = 'ma-dev-panel';
+    panel.id = 'maDevPanel';
+    panel.innerHTML = '<div class="ma-dev-card" role="dialog" aria-modal="false" aria-labelledby="maDevTitle"><div class="ma-dev-head"><div class="ma-dev-title" id="maDevTitle">Dev menu</div><button class="ma-dev-btn" type="button" data-ma-dev-close>Close</button></div>' + (pageDebug ? '<div class="ma-dev-row"><div class="ma-dev-label">Page tools</div><div class="ma-dev-actions"><button class="ma-dev-btn" type="button" data-ma-dev-page-debug>' + pageDebug.label + '</button>' + (pageDebug.close ? '<button class="ma-dev-btn" type="button" data-ma-dev-page-debug-close>' + pageDebug.closeLabel + '</button>' : '') + '</div></div>' : '') + '<div class="ma-dev-row"><div class="ma-dev-label">Console</div><div style="color:var(--muted,#9aa3b8);font-size:13px;line-height:1.5;">Open this panel with <strong>dev()</strong>. It stays in the bottom-right so the page remains usable.</div></div></div>';
+    document.body.appendChild(panel);
+    panel.addEventListener('click', event => {
+      if (event.target.closest('[data-ma-dev-close]')) closeDev();
+      if (event.target.closest('[data-ma-dev-page-debug]')) {
+        try { getPageDebug()?.render(); } catch (error) { console.warn('Debug panel unavailable', error); }
+      }
+      if (event.target.closest('[data-ma-dev-page-debug-close]')) {
+        try { getPageDebug()?.close?.(); } catch (error) { console.warn('Close debug unavailable', error); }
+      }
+    });
+  }
+
+  function openDev(){ ensureDevPanel(); document.getElementById('maDevPanel')?.classList.add('open'); }
+  function closeDev(){ document.getElementById('maDevPanel')?.classList.remove('open'); }
+  function init(){ ensureDevPanel(); }
+
+  window.dev = openDev;
+  window.atlasDev = openDev;
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeDev(); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
 
 /* === mode-atlas-sync-polish.js === */
-(function(){function fmt(ts){const n=Number(ts||0);if(!n)return'Sync checked just now';const d=new Date(n);if(Number.isNaN(d.getTime()))return'Sync checked just now';const diff=Math.max(0,Date.now()-n);if(diff<60000)return'Sync checked just now';if(diff<3600000)return'Sync checked '+Math.round(diff/60000)+'m ago';if(diff<86400000)return'Sync checked '+Math.round(diff/3600000)+'h ago';return'Sync checked '+d.toLocaleDateString([],{month:'short',day:'numeric'})}function bestSyncTime(){const keys=['modeAtlasLastSyncCheck','kanaWordBankUpdatedAt','cloudReadingUpdatedAt','cloudWritingUpdatedAt','testModeResultsUpdatedAt','readingTestModeResultsUpdatedAt','writingTestModeResultsUpdatedAt'];return keys.map(k=>Number(localStorage.getItem(k)||0)).filter(Boolean).sort((a,b)=>b-a)[0]||Date.now()}function addSyncPill(){let target=document.getElementById('profileStatus')||document.getElementById('identityStatus')||document.getElementById('studyProfileStatus');if(!target||document.getElementById('maSyncPill')||document.querySelector('.ma-sync-pill'))return;const pill=document.createElement('div');pill.className='ma-sync-pill';pill.id='maSyncPill';pill.textContent=fmt(bestSyncTime());target.insertAdjacentElement('afterend',pill)}function hideLoader(){localStorage.setItem('modeAtlasLastSyncCheck',String(Date.now()));addSyncPill();const el=document.getElementById('maLoadingScreen');if(el){el.classList.add('done');setTimeout(()=>el.remove(),450)}}window.ModeAtlasSyncPolish={hideLoader,addSyncPill};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hideLoader,120));else setTimeout(hideLoader,80);window.addEventListener('load',()=>setTimeout(hideLoader,80));setTimeout(hideLoader,900)})();
+(function ModeAtlasSyncPolish(){
+  if (window.__modeAtlasSyncPolishInstalled) return;
+  window.__modeAtlasSyncPolishInstalled = true;
 
-/* === mode-atlas-profile-clone.js === */
-(function(){
-  function collectSave(){
-    var keys=['highScore','settings','charStats','charTimes','charSrs','scoreHistory','dailyChallengeHistory','reverseHighScore','reverseSettings','reverseCharStats','reverseCharTimes','reverseCharSrs','reverseScoreHistory','reverseDailyChallengeHistory','kanaWordBank','testModeResults','readingTestModeResults','writingTestModeResults','modeAtlasDisplayMode'];
-    var out={version:'mode-atlas-unified-save-v1',exportedAt:new Date().toISOString(),localStorage:{}};
-    keys.forEach(function(k){var v=localStorage.getItem(k); if(v!==null) out.localStorage[k]=v;});
-    return out;
-  }
-  function getSaveMap(obj){
-    if(!obj || typeof obj !== 'object') throw new Error('Invalid save file');
-    // Current Mode Atlas exports use { app, version, exportedAt, data }.
-    // Older quick exports used { localStorage }. Keep both supported.
-    var map = obj.localStorage || obj.data || obj;
-    if(!map || typeof map !== 'object' || Array.isArray(map)) throw new Error('Invalid save file');
-    return map;
-  }
-  async function importSaveObject(obj){
-    var usedUnifiedImporter = false;
-    if(window.KanaCloudSync?.importLocalBackup){
-      await window.KanaCloudSync.importLocalBackup(obj);
-      usedUnifiedImporter = true;
-    } else {
-      var map=getSaveMap(obj);
-      Object.keys(map).forEach(function(k){
-        var v=map[k];
-        if(v===undefined || v===null) return;
-        localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-      });
-    }
-    localStorage.setItem('modeAtlasImportProtectUntil', String(Date.now()+15000));
-    localStorage.setItem('modeAtlasLocalImportGuardUntil', String(Date.now()+120000));
-    if(window.KanaCloudSync && !usedUnifiedImporter){
-      try{['reading','writing','wordBank','readingTests','writingTests'].forEach(function(s){window.KanaCloudSync.markSectionUpdated&&window.KanaCloudSync.markSectionUpdated(s);}); window.KanaCloudSync.scheduleSync&&window.KanaCloudSync.scheduleSync();}catch(e){}
+  function hideLoader(){
+    localStorage.setItem('modeAtlasLastSyncCheck', String(Date.now()));
+    const el = document.getElementById('maLoadingScreen');
+    if (el) {
+      el.classList.add('done');
+      setTimeout(() => el.remove(), 450);
     }
   }
-  function ensureDrawer(){
-    document.querySelectorAll('.profile-drawer,#profileDrawer,.drawer-backdrop,#profileBackdrop').forEach(function(el){el.remove();});
-    var backdrop=document.createElement('div');backdrop.className='drawer-backdrop';backdrop.id='profileBackdrop';
-    var drawer=document.createElement('aside');drawer.className='profile-drawer';drawer.id='profileDrawer';drawer.setAttribute('aria-hidden','true');
-    drawer.innerHTML='<div class="drawer-head"><div class="drawer-title">Profile</div><button class="drawer-close" id="profileCloseBtn" type="button">Close</button></div>'+
-      '<div class="drawer-user"><img class="drawer-avatar" id="profileAvatar" alt=""/><div><div class="drawer-name" id="profileName">Guest</div><div class="drawer-email" id="profileEmail">Not signed in</div></div></div>'+
-      '<div class="drawer-status" id="profileStatus">Sign in on Mode Atlas to sync your learning across devices.</div>'+
-      '<div class="drawer-actions"><button class="drawer-action primary" id="profileSignInBtn" data-profile-sign-in type="button">Sign in</button><button class="drawer-action" id="profileSignOutBtn" data-profile-sign-out type="button" style="display:none;">Sign out</button><a class="drawer-action" href="/">Atlas</a><a class="drawer-action" href="/kana/">Kana Trainer</a></div>'+
-      '<div class="ma-save-section"><div class="ma-save-title">Save / Load</div><div class="ma-save-grid"><button class="drawer-action primary" type="button" data-ma-save-export>Export save</button><button class="drawer-action" type="button" data-ma-save-copy>Copy save</button><button class="drawer-action" type="button" data-ma-save-import>Import save</button></div><input type="file" accept=".json,application/json" data-ma-save-file style="display:none"/><div class="ma-save-note">One backup for your Mode Atlas progress, preferences, and local data.</div></div>'+
-      '<div class="ma-settings-panel"><div class="ma-settings-title">Preferences</div><div class="ma-settings-row"><div class="ma-settings-label">Display</div><div class="ma-display-options"><button class="ma-display-option" data-display="auto" type="button">Auto</button><button class="ma-display-option" data-display="compact" type="button">Compact</button><button class="ma-display-option" data-display="mobile" type="button">Mobile</button></div></div></div>';
-    document.body.insertBefore(backdrop,document.body.firstChild); document.body.insertBefore(drawer,backdrop.nextSibling);
-    bindDrawer(); bindSave(); bindPrefs(); bindCloud();
-  }
-  function setOpen(v){var d=document.getElementById('profileDrawer'),b=document.getElementById('profileBackdrop'); if(d){d.classList.toggle('open',v);d.setAttribute('aria-hidden',v?'false':'true')} if(b)b.classList.toggle('open',v)}
-  function bindDrawer(){
-    document.getElementById('profileCloseBtn')?.addEventListener('click',function(){setOpen(false)});
-    document.getElementById('profileBackdrop')?.addEventListener('click',function(){setOpen(false)});
-    document.addEventListener('keydown',function(e){if(e.key==='Escape')setOpen(false)});
-    document.querySelectorAll('#profileOpenBtn,.profile-trigger,[data-profile-open],#studyProfileOpen').forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();setOpen(true)},true)});
-    window.ModeAtlasKanaProfile={open:function(){setOpen(true)},close:function(){setOpen(false)}};
-    window.ModeAtlasProfile=window.ModeAtlasKanaProfile;
-  }
-  function bindSave(){var d=document.getElementById('profileDrawer'); if(!d)return; var file=d.querySelector('[data-ma-save-file]'); d.querySelector('[data-ma-save-export]')?.addEventListener('click',function(){var blob=new Blob([JSON.stringify(collectSave(),null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mode-atlas-save.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},0)}); d.querySelector('[data-ma-save-copy]')?.addEventListener('click',function(){navigator.clipboard&&navigator.clipboard.writeText(JSON.stringify(collectSave(),null,2));}); d.querySelector('[data-ma-save-import]')?.addEventListener('click',function(){file&&file.click()}); file&&file.addEventListener('change',function(e){var f=e.target.files&&e.target.files[0]; if(!f)return; var r=new FileReader(); r.onload=async function(){try{var payload=JSON.parse(r.result); if(window.ModeAtlasImportUi?.previewAndImport){await window.ModeAtlasImportUi.previewAndImport(payload);}else{await importSaveObject(payload); location.reload();}}catch(err){console.warn('Save import failed.',err); if(window.ModeAtlasToast) window.ModeAtlasToast('Import failed. Please use a valid Mode Atlas save file.','bad');}}; r.readAsText(f); file.value='';});}
-  function bindPrefs(){function mode(){return localStorage.getItem('modeAtlasDisplayMode')||'auto'} function apply(){document.body.dataset.displayMode=mode(); document.querySelectorAll('.ma-display-option').forEach(function(b){b.classList.toggle('active',b.dataset.display===mode())})} document.querySelectorAll('.ma-display-option').forEach(function(b){b.addEventListener('click',function(){localStorage.setItem('modeAtlasDisplayMode',b.dataset.display);apply();window.dispatchEvent(new CustomEvent('modeAtlasDisplayModeChanged',{detail:{mode:b.dataset.display}}));})}); apply();}
-  function bindCloud(){if(window.KanaCloudSync&&window.KanaCloudSync.bindUi){try{window.KanaCloudSync.bindUi({signInBtn:document.getElementById('profileSignInBtn'),signOutBtn:document.getElementById('profileSignOutBtn'),statusEl:document.getElementById('profileStatus'),nameEl:document.getElementById('profileName'),emailEl:document.getElementById('profileEmail'),photoEl:document.getElementById('profileAvatar')});}catch(e){}}}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureDrawer);else ensureDrawer();
-  setTimeout(bindCloud,500); setTimeout(bindCloud,1500);
+
+  window.ModeAtlasSyncPolish = { hideLoader };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(hideLoader, 120));
+  else setTimeout(hideLoader, 80);
+  window.addEventListener('load', () => setTimeout(hideLoader, 80));
+  setTimeout(hideLoader, 900);
 })();
+
+/* Shared profile drawer is provided by assets/ui/mode-atlas-profile-drawer-bindings.js. */
 
 /* === mode-atlas-late-bootstrap.js === */
 /* Shared late bootstrap: visit flow, save/sync UI, loading failsafe. */
@@ -125,11 +206,92 @@
   const ROWS=[['あ row','あいうえお'],['か row','かきくけこ'],['さ row','さしすせそ'],['た row','たちつてと'],['な row','なにぬねの'],['は row','はひふへほ'],['ま row','まみむめも'],['や row','やゆよ'],['ら row','らりるれろ'],['わ row','わをん'],['ア row','アイウエオ'],['カ row','カキクケコ'],['サ row','サシスセソ'],['タ row','タチツテト'],['ナ row','ナニヌネノ']];
   function suggestions(){const st=j('charStats',{}),tm=j('charTimes',{});const a=ROWS.map(([name,chars])=>{let c=0,w=0,ms=0,n=0;[...chars].forEach(ch=>{c+=Number(st[ch]?.correct||0);w+=Number(st[ch]?.wrong||0);if(tm[ch]?.avg&&tm[ch]?.count){ms+=tm[ch].avg*tm[ch].count;n+=tm[ch].count}});const total=c+w,acc=total?c/total:1;return{name,total,score:w*4+(1-acc)*50+Math.min((n?ms/n:0)/500,12)+(total?0:-100)}}).filter(r=>r.total>0).sort((a,b)=>b.score-a.score).slice(0,3);return a.length?a:[{name:'あ row'},{name:'か row'},{name:'さ row'}]}
   function name(){const u=window.KanaCloudSync?.getUser?.();const n=(u?.displayName||u?.email||'').trim();if(n)return n.split(/\s+/)[0].split('@')[0];for(const id of ['profileName','drawerName','studyProfileName','identityName']){const e=document.getElementById(id),t=(e?.textContent||'').trim();if(t&&!/guest/i.test(t))return t.split(/\s+/)[0]}return'there'}
-  function ensure(){if(document.getElementById('maVisitModal'))return;const css=document.createElement('style');css.textContent='.ma-visit-backdrop{position:fixed;inset:0;z-index:240;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.ma-visit-backdrop.open{display:flex}.ma-visit-card{width:min(520px,100%);border-radius:28px;padding:22px;background:radial-gradient(circle at top right,rgba(125,181,255,.16),transparent 34%),linear-gradient(180deg,rgba(22,25,34,.98),rgba(8,10,16,.98));border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 90px rgba(0,0,0,.55);color:var(--text,#f7f8ff)}.ma-visit-kicker{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--muted,#9aa3b8);margin-bottom:10px}.ma-visit-title{font-size:30px;line-height:1.04;font-weight:950;letter-spacing:-.04em;margin:0 0 10px}.ma-visit-copy{color:var(--soft,#cbd5e1);line-height:1.55;margin:0 0 18px;font-size:15px}.ma-visit-panel{border-radius:20px;padding:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);margin:12px 0}.ma-visit-label{font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:var(--muted,#9aa3b8);margin-bottom:8px}.ma-visit-list{display:flex;flex-wrap:wrap;gap:8px}.ma-visit-chip{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);font-size:13px;font-weight:800}.ma-visit-presets{display:grid;gap:10px}.ma-visit-preset{appearance:none;width:100%;text-align:left;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055);color:inherit;padding:13px 14px;cursor:pointer;display:grid;gap:4px}.ma-visit-preset:hover,.ma-visit-preset:focus-visible{background:rgba(117,227,168,.12);border-color:rgba(117,227,168,.45);outline:none}.ma-visit-preset span{font-size:15px;font-weight:950}.ma-visit-preset small{font-size:12px;color:var(--soft,#cbd5e1);font-weight:750}.ma-visit-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.ma-visit-btn{appearance:none;border:1px solid rgba(255,255,255,.10);border-radius:15px;padding:12px 14px;background:rgba(255,255,255,.06);color:inherit;text-decoration:none;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:44px}.ma-visit-btn.primary{background:linear-gradient(135deg,rgba(117,227,168,.92),rgba(125,181,255,.92));color:#061018;border-color:transparent}@media(max-width:640px){.ma-visit-card{padding:18px;border-radius:22px}.ma-visit-title{font-size:25px}.ma-visit-actions{display:grid}.ma-visit-btn{width:100%}}';document.head.appendChild(css);const m=document.createElement('div');m.id='maVisitModal';m.className='ma-visit-backdrop';m.innerHTML='<div class="ma-visit-card" role="dialog" aria-modal="true"><div id="maVisitContent"></div></div>';document.body.appendChild(m);m.addEventListener('click',e=>{if(e.target===m)closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()})}
-  function closeModal(){document.getElementById('maVisitModal')?.classList.remove('open')}
-  function first(){ensure();localStorage.setItem(K.first,'true');const c=document.getElementById('maVisitContent');const presets=[['starter','Starter','あ row + hint mode'],['intermediate','Intermediate','All hiragana rows'],['advanced','Advanced','Hiragana, katakana + dakuten'],['pro','Pro','Everything enabled']];c.innerHTML='<div class="ma-visit-kicker">Mode Atlas</div><h2 class="ma-visit-title">Welcome to Mode Atlas</h2><p class="ma-visit-copy">To help you get started, we recommend starting here:</p><div class="ma-visit-panel"><div class="ma-visit-label">Reading Mode presets</div><div class="ma-visit-presets">'+presets.map(p=>'<button class="ma-visit-preset" type="button" data-preset="'+esc(p[0])+'"><span>'+esc(p[1])+'</span><small>'+esc(p[2])+'</small></button>').join('')+'</div></div><div class="ma-visit-actions"><button class="ma-visit-btn" type="button" data-explore>Explore on my own</button></div>';c.querySelectorAll('[data-preset]').forEach(btn=>{btn.onclick=()=>{const preset=btn.getAttribute('data-preset')||'starter';localStorage.setItem('modeAtlasStartReadingPreset',preset);location.href='/reading/?starter='+encodeURIComponent(preset)}});c.querySelector('[data-explore]').onclick=()=>{closeModal()};document.getElementById('maVisitModal').classList.add('open')}
+  function appBasePath(){
+    try {
+      const marker = '/assets/';
+      const scripts = Array.from(document.scripts || []);
+      const runtime = scripts.find(script => String(script.src || '').includes('/assets/app/mode-atlas-app-runtime.js'));
+      if (runtime && runtime.src) return new URL(runtime.src.slice(0, runtime.src.indexOf(marker) + 1)).pathname;
+    } catch {}
+    return '/';
+  }
+  function appUrl(path){
+    const clean = String(path || '').replace(/^\/+/, '');
+    try { return new URL(clean, location.origin + appBasePath()).pathname; } catch { return '/' + clean; }
+  }
+  function legalUrl(kind){ return appUrl(kind === 'terms' ? 'terms/' : 'privacy/'); }
+  function readingPresetUrl(preset){ return appUrl('reading/?starter=' + encodeURIComponent(preset || 'starter')); }
+  function ensure(){
+    if(document.getElementById('maVisitModal'))return;
+    const css=document.createElement('style');
+    css.textContent='.ma-visit-backdrop{position:fixed;inset:0;z-index:240;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.ma-visit-backdrop.open{display:flex}.ma-visit-card{width:min(640px,100%);max-height:min(92vh,820px);overflow:auto;border-radius:28px;padding:22px;background:radial-gradient(circle at top right,rgba(125,181,255,.16),transparent 34%),linear-gradient(180deg,rgba(22,25,34,.98),rgba(8,10,16,.98));border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 90px rgba(0,0,0,.55);color:var(--text,#f7f8ff)}.ma-visit-kicker{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--muted,#9aa3b8);margin-bottom:10px}.ma-visit-title{font-size:30px;line-height:1.04;font-weight:950;letter-spacing:-.04em;margin:0 0 10px}.ma-visit-copy{color:var(--soft,#cbd5e1);line-height:1.55;margin:0 0 18px;font-size:15px}.ma-visit-panel{border-radius:20px;padding:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);margin:12px 0}.ma-visit-label{font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:var(--muted,#9aa3b8);margin-bottom:8px}.ma-visit-list{display:flex;flex-wrap:wrap;gap:8px}.ma-visit-chip{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);font-size:13px;font-weight:800}.ma-visit-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ma-visit-preset{appearance:none;width:100%;text-align:left;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055);color:inherit;padding:13px 14px;cursor:pointer;display:grid;gap:4px;min-height:86px}.ma-visit-preset:hover,.ma-visit-preset:focus-visible{background:rgba(125,181,255,.13);border-color:rgba(125,181,255,.48);outline:none}.ma-visit-preset.selected,.ma-visit-preset[aria-pressed="true"]{background:linear-gradient(135deg,rgba(125,181,255,.24),rgba(167,139,250,.18));border-color:rgba(125,181,255,.82);box-shadow:0 0 0 3px rgba(125,181,255,.16),0 12px 30px rgba(0,0,0,.22)}.ma-visit-preset.selected span,.ma-visit-preset[aria-pressed="true"] span{color:#ffffff}.ma-visit-preset.selected small,.ma-visit-preset[aria-pressed="true"] small{color:#dbeafe}.ma-visit-preset span{font-size:15px;font-weight:950}.ma-visit-preset small{font-size:12px;color:var(--soft,#cbd5e1);font-weight:750;line-height:1.35}.ma-visit-legal{display:grid;gap:12px;margin-top:14px}.ma-visit-legal-links{display:flex;flex-wrap:wrap;gap:10px;color:var(--soft,#cbd5e1);font-size:13px}.ma-visit-legal-links a{color:#9ec5ff;font-weight:900;text-decoration:none}.ma-visit-legal-links a:hover{text-decoration:underline}.ma-visit-link-note{color:var(--muted,#9aa3b8);font-size:12px;font-weight:800}.ma-visit-check{display:flex;align-items:flex-start;gap:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.045);padding:12px 13px;color:var(--soft,#cbd5e1);font-size:13px;line-height:1.4}.ma-visit-check input{width:19px;height:19px;flex:0 0 auto;margin:0;accent-color:#7db5ff}.ma-visit-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.ma-visit-btn{appearance:none;border:1px solid rgba(255,255,255,.10);border-radius:15px;padding:12px 14px;background:rgba(255,255,255,.06);color:inherit;text-decoration:none;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:44px}.ma-visit-btn.primary{background:rgba(255,255,255,.08);color:rgba(247,248,255,.62);border-color:rgba(255,255,255,.10)}.ma-visit-btn.primary.ready,.ma-visit-btn.primary:not(:disabled){background:linear-gradient(135deg,rgba(125,181,255,.96),rgba(167,139,250,.92));color:#07111f;border-color:transparent;box-shadow:0 14px 34px rgba(0,0,0,.28),0 0 0 3px rgba(125,181,255,.14)}.ma-visit-btn:disabled{cursor:not-allowed;opacity:.72;filter:saturate(.65)}.ma-visit-error{display:none;margin-top:10px;color:#ffd2d2;font-size:13px;font-weight:800}.ma-visit-error.show{display:block}@media(max-width:640px){.ma-visit-card{padding:18px;border-radius:22px}.ma-visit-title{font-size:25px}.ma-visit-presets{grid-template-columns:1fr}.ma-visit-actions{display:grid}.ma-visit-btn{width:100%}}';
+    document.head.appendChild(css);
+    const m=document.createElement('div');
+    m.id='maVisitModal';
+    m.className='ma-visit-backdrop';
+    m.innerHTML='<div class="ma-visit-card" role="dialog" aria-modal="true"><div id="maVisitContent"></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click',e=>{if(e.target===m)closeModal()});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()})
+  }
+  function closeModal(force){const modal=document.getElementById('maVisitModal'); if(!modal)return; if(modal.dataset.locked==='true' && force!==true)return; modal.classList.remove('open'); modal.dataset.locked='false'}
+  function first(){
+    ensure();
+    const c=document.getElementById('maVisitContent');
+    const presets=[
+      ['starter','Starter','あ row + hint mode. Best if kana is brand new.'],
+      ['intermediate','Intermediate','All hiragana rows with hints off.'],
+      ['advanced','Advanced','Hiragana, katakana, and dakuten.'],
+      ['pro','Pro','Everything enabled, including yōon and extended katakana.']
+    ];
+    c.innerHTML='<div class="ma-visit-kicker">Mode Atlas setup</div><h2 class="ma-visit-title">Welcome to Mode Atlas</h2><p class="ma-visit-copy">Choose a starting preset for Mode Atlas. This sets your first study session layout for all our branches and can be changed or customised later. We will also send you to Kana Trainer - Reading mode to get you started.</p><div class="ma-visit-panel"><div class="ma-visit-label">Study presets</div><div class="ma-visit-presets">'+presets.map(p=>'<button class="ma-visit-preset" type="button" data-ma-onboarding-preset="'+esc(p[0])+'" aria-pressed="false"><span>'+esc(p[1])+'</span><small>'+esc(p[2])+'</small></button>').join('')+'</div></div><div class="ma-visit-legal"><div class="ma-visit-legal-links"><a href="'+esc(legalUrl('privacy'))+'" target="_blank" rel="noopener">Privacy Policy</a><a href="'+esc(legalUrl('terms'))+'" target="_blank" rel="noopener">Terms of Use</a><span class="ma-visit-link-note">These open in a new tab so setup stays open.</span></div><label class="ma-visit-check"><input type="checkbox" data-legal-agree><span>I agree to the Privacy Policy and Terms of Use.</span></label></div><div class="ma-visit-error" data-setup-error>Please choose a preset and agree before beginning.</div><div class="ma-visit-actions"><button class="ma-visit-btn primary" type="button" data-begin disabled aria-disabled="true">Begin!</button></div>';
+    let selected='';
+    const begin=c.querySelector('[data-begin]');
+    const agree=c.querySelector('[data-legal-agree]');
+    const err=c.querySelector('[data-setup-error]');
+    function setSelected(btn){
+      selected=btn?.getAttribute('data-ma-onboarding-preset')||'';
+      c.querySelectorAll('[data-ma-onboarding-preset]').forEach(b=>{
+        const on=b===btn;
+        b.classList.toggle('selected',on);
+        b.setAttribute('aria-pressed',on?'true':'false');
+      });
+      refresh();
+    }
+    function refresh(){
+      const ready=Boolean(selected && agree && agree.checked);
+      begin.disabled=!ready;
+      begin.setAttribute('aria-disabled',ready?'false':'true');
+      begin.classList.toggle('ready',ready);
+      c.classList.toggle('ma-visit-ready',ready);
+      if(ready) err.classList.remove('show');
+    }
+    c.addEventListener('click', event=>{
+      const preset=event.target.closest('[data-ma-onboarding-preset]');
+      if(preset && c.contains(preset)){ event.preventDefault(); setSelected(preset); }
+    });
+    agree.addEventListener('change', refresh);
+    agree.addEventListener('input', refresh);
+    begin.addEventListener('click', ()=>{
+      if(begin.disabled){err.classList.add('show');return;}
+      const applied = window.ModeAtlasPresets?.apply?.(selected, { target: 'both', source: 'onboarding' });
+      if(!applied){err.classList.add('show');return;}
+      localStorage.setItem(K.first,'true');
+      localStorage.setItem('modeAtlasOnboardingComplete','true');
+      localStorage.setItem('modeAtlasLegalAccepted','true');
+      localStorage.setItem('modeAtlasLegalAcceptedAt',String(Date.now()));
+      localStorage.setItem('modeAtlasLegalVersion','2026-05');
+      sessionStorage.setItem('modeAtlasShowWhatsNewAfterOnboarding','1');
+      closeModal(true);
+      location.href=appUrl('reading/');
+    });
+    const modal=document.getElementById('maVisitModal');
+    modal.dataset.locked='true';
+    modal.classList.add('open');
+    refresh();
+  }
   function ret(){ensure();localStorage.setItem(K.return,studyDate());const lm=j(K.lastMode,{page:'Reading Practice',mode:'Endless Mode',href:'default.html'}),s=suggestions(),st=streak();const c=document.getElementById('maVisitContent');c.innerHTML=`<div class="ma-visit-kicker">Daily return</div><h2 class="ma-visit-title">Welcome back, ${esc(name())}</h2><p class="ma-visit-copy">Last studied: <strong>${esc(ago(localStorage.getItem(K.lastStudied)))}</strong><br>Current streak: <strong>${st} day${st===1?'':'s'}</strong></p><div class="ma-visit-panel"><div class="ma-visit-label">Suggested review</div><div class="ma-visit-list">${s.map(r=>`<span class="ma-visit-chip">${esc(r.name)}</span>`).join('')}</div></div><div class="ma-visit-panel"><div class="ma-visit-label">Resume</div><div class="ma-visit-list"><span class="ma-visit-chip">${esc(lm.page||'Reading Practice')} · ${esc(lm.mode||'Endless Mode')}</span></div></div><div class="ma-visit-actions"><a class="ma-visit-btn primary" href="${esc(lm.href||'default.html')}">Resume</a><button class="ma-visit-btn" type="button" data-close>Not now</button></div>`;c.querySelector('[data-close]').onclick=closeModal;document.getElementById('maVisitModal').classList.add('open')}
-  function maybe(){if(page()!=='index.html')return;const q=new URLSearchParams(location.search),ff=sessionStorage.getItem(K.forceFirst)==='1'||q.has('devFirstVisit'),fr=sessionStorage.getItem(K.forceReturn)==='1'||q.has('devReturn');sessionStorage.removeItem(K.forceFirst);sessionStorage.removeItem(K.forceReturn);localStorage.removeItem(K.forceFirst);localStorage.removeItem(K.forceReturn);setTimeout(async()=>{try{if(window.KanaCloudSync?.ready)await Promise.race([window.KanaCloudSync.ready,new Promise(r=>setTimeout(r,900))])}catch{}if(ff)return first();if(fr)return ret();const nd=!hasData();if(nd&&localStorage.getItem(K.first)!=='true')return first();if(!nd){const t=studyDate();if(localStorage.getItem(K.return)!==t)return ret();streak()}},650)}
+  function maybe(){if(page()!=='index.html')return;const q=new URLSearchParams(location.search),ff=sessionStorage.getItem(K.forceFirst)==='1'||q.has('devFirstVisit')||q.has('setup'),fr=sessionStorage.getItem(K.forceReturn)==='1'||q.has('devReturn');sessionStorage.removeItem(K.forceFirst);sessionStorage.removeItem(K.forceReturn);localStorage.removeItem(K.forceFirst);localStorage.removeItem(K.forceReturn);setTimeout(async()=>{try{if(window.KanaCloudSync?.ready)await Promise.race([window.KanaCloudSync.ready,new Promise(r=>setTimeout(r,900))])}catch{}if(ff)return first();if(fr)return ret();const nd=!hasData();if(nd&&localStorage.getItem(K.first)!=='true')return first();if(!nd){const t=studyDate();if(localStorage.getItem(K.return)!==t)return ret();streak()}},650)}
   function triggerFirst(){localStorage.removeItem(K.forceFirst);sessionStorage.removeItem(K.forceFirst);if(page()==='index.html')first();else{sessionStorage.setItem(K.forceFirst,'1');location.href='/?devFirstVisit=1'}}
   function triggerReturn(){localStorage.removeItem(K.forceReturn);sessionStorage.removeItem(K.forceReturn);if(page()==='index.html')ret();else{sessionStorage.setItem(K.forceReturn,'1');location.href='/?devReturn=1'}}
   function reset(){[K.first,K.return,K.forceFirst,K.forceReturn,K.lastVisit,K.streak].forEach(k=>localStorage.removeItem(k));console.info('Mode Atlas visit flags reset')}
@@ -142,15 +304,8 @@
   if (window.__modeAtlasUnifiedSaveSyncUiLoaded) return;
   window.__modeAtlasUnifiedSaveSyncUiLoaded = true;
 
-  const SECTION_HTML = '<div class="ma-save-title">Save / Load</div>' +
-    '<div class="ma-save-grid">' +
-      '<button class="drawer-action primary" type="button" data-ma-unified-export>Export save</button>' +
-      '<button class="drawer-action" type="button" data-ma-unified-copy>Copy save</button>' +
-      '<button class="drawer-action" type="button" data-ma-unified-import>Import save</button>' +
-      '<button class="drawer-action danger" type="button" data-ma-unified-reset>Reset data</button>' +
-    '</div>' +
-    '<input type="file" accept=".json,application/json" data-ma-unified-file style="display:none" />' +
-    '<div class="ma-save-note">Importing a backup replaces matching sections that contain real data. You will review a summary before anything changes.</div>';
+  // Save/import controls are rendered by assets/ui/mode-atlas-settings-menu.js.
+
 
   const RESET_WARNING = 'Reset all Mode Atlas data?\n\nThis clears local save data on this device. If you are signed in and cloud is available, it also clears the cloud save data for this account. This cannot be undone.';
 
@@ -270,8 +425,8 @@
       '<div class="ma-import-confirm-meta" data-ma-import-meta></div>' +
       '<div class="ma-import-confirm-table" data-ma-import-table></div>' +
       '<div class="ma-import-confirm-actions">' +
-        '<button type="button" class="drawer-action" data-ma-import-cancel>Cancel</button>' +
-        '<button type="button" class="drawer-action primary" data-ma-import-continue>Continue import</button>' +
+        '<button type="button" class="ma-import-confirm-button" data-ma-import-cancel>Cancel</button>' +
+        '<button type="button" class="ma-import-confirm-button ma-primary" data-ma-import-continue>Continue import</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(modal);
@@ -388,76 +543,22 @@
   }
 
   function refreshSyncPills(){
-    const st = getSyncStatus();
-    const targets = document.querySelectorAll('#profileStatus,#studyProfileStatus,#identityStatus');
-    targets.forEach((target) => {
-      if (!target) return;
-      const parent = target.parentElement || document;
-      const pills = Array.from(parent.querySelectorAll(':scope > .ma-sync-pill, :scope > #maSyncPill'));
-      let pill = pills[0] || document.getElementById('maSyncPill') || null;
-      pills.slice(1).forEach((extra) => extra.remove());
-      if (!pill || !parent.contains(pill)) {
-        pill = document.createElement('div');
-        pill.className = 'ma-sync-pill';
-        target.insertAdjacentElement('afterend', pill);
-      }
-      pill.id = 'maSyncPill';
-      pill.classList.add('ma-sync-pill');
-      if (pill.textContent !== st.text) pill.textContent = st.text;
-      const tone = st.tone || st.state || 'neutral';
-      if (!pill.classList.contains(tone)) {
-        pill.classList.remove('ok','warning','local','neutral','cloud','offline');
-        pill.classList.add(tone);
-      }
-    });
-    const canonical = document.getElementById('maSyncPill');
-    document.querySelectorAll('.ma-sync-pill').forEach((pill) => {
-      if (canonical && pill !== canonical && pill.parentElement?.querySelector('#profileStatus,#studyProfileStatus,#identityStatus')) {
-        pill.remove();
-        return;
-      }
-      if (pill.textContent !== st.text) pill.textContent = st.text;
-      const tone = st.tone || st.state || 'neutral';
-      if (!pill.classList.contains(tone)) {
-        pill.classList.remove('ok','warning','local','neutral','cloud','offline');
-        pill.classList.add(tone);
-      }
-    });
+    window.ModeAtlasProfile?.refresh?.();
   }
 
   function ensureStyle(){
     if (document.getElementById('ma-unified-save-sync-style')) return;
     const style = document.createElement('style');
     style.id = 'ma-unified-save-sync-style';
-    style.textContent = '.ma-save-section{display:block!important;margin-top:14px!important;padding:14px!important;border-radius:18px!important;background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.08)!important}.ma-save-title{font-weight:900;font-size:14px;margin-bottom:10px}.ma-save-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}.ma-save-grid button{width:100%;min-height:42px}.ma-save-grid .danger{border-color:rgba(255,107,107,.38)!important;color:#ffd6d6!important;background:rgba(255,107,107,.08)!important}.ma-save-note{margin-top:10px;color:var(--muted,#9aa3b8);font-size:12px;line-height:1.45}.ma-sync-pill{display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--muted,#9aa3b8)}.ma-sync-pill.ok,.ma-sync-pill.cloud{border-color:rgba(89,210,120,.34);background:rgba(89,210,120,.12);color:#bcf7cb}.ma-sync-pill.warning,.ma-sync-pill.offline{border-color:rgba(255,176,64,.40);background:rgba(255,176,64,.12);color:#ffe0aa}.ma-sync-pill.local,.ma-sync-pill.neutral{border-color:rgba(102,168,255,.34);background:rgba(102,168,255,.11);color:#d7e8ff}.ma-import-confirm-backdrop{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,6,12,.72);backdrop-filter:blur(12px)}.ma-import-confirm-backdrop.open{display:flex}.ma-import-confirm-card{width:min(760px,100%);max-height:min(82vh,760px);overflow:auto;border-radius:24px;background:rgba(17,24,39,.98);border:1px solid rgba(255,255,255,.13);box-shadow:0 24px 70px rgba(0,0,0,.48);padding:20px;color:var(--text,#f6f7fb)}.ma-import-confirm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}.ma-import-confirm-kicker{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#9aa3b8)}.ma-import-confirm-card h2{margin:3px 0 0;font-size:24px;line-height:1.15}.ma-import-confirm-copy{margin:0 0 14px;color:var(--muted,#9aa3b8);line-height:1.5}.ma-import-confirm-x{width:36px;height:36px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:var(--text,#f6f7fb);font-size:24px;line-height:1;cursor:pointer}.ma-import-confirm-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.ma-import-confirm-meta span{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:12px;color:var(--muted,#9aa3b8)}.ma-import-confirm-table{display:grid;gap:8px}.ma-import-confirm-row{display:grid;grid-template-columns:1.05fr 1fr 1fr 1.05fr;gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:13px}.ma-import-confirm-row.head{font-weight:900;color:var(--muted,#9aa3b8);background:transparent;border-color:transparent;padding-bottom:2px}.ma-import-confirm-row span{min-width:0}.ma-import-confirm-row .will-import{color:#bcf7cb;font-weight:900}.ma-import-confirm-row .will-keep{color:#ffe0aa;font-weight:900}.ma-import-confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.ma-import-confirm-actions button{min-width:132px}.ma-import-preview-backdrop{display:none!important}@media(max-width:700px){.ma-save-grid{grid-template-columns:1fr!important}.ma-import-confirm-card{padding:16px}.ma-import-confirm-row{grid-template-columns:1fr;gap:4px}.ma-import-confirm-row.head{display:none}.ma-import-confirm-actions{display:grid;grid-template-columns:1fr}.ma-import-confirm-actions button{width:100%}}';
+    style.textContent = '.ma-import-confirm-backdrop{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,6,12,.72);backdrop-filter:blur(12px)}.ma-import-confirm-backdrop.open{display:flex}.ma-import-confirm-card{width:min(760px,100%);max-height:min(82vh,760px);overflow:auto;border-radius:24px;background:rgba(17,24,39,.98);border:1px solid rgba(255,255,255,.13);box-shadow:0 24px 70px rgba(0,0,0,.48);padding:20px;color:var(--text,#f6f7fb)}.ma-import-confirm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}.ma-import-confirm-kicker{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#9aa3b8)}.ma-import-confirm-card h2{margin:3px 0 0;font-size:24px;line-height:1.15}.ma-import-confirm-copy{margin:0 0 14px;color:var(--muted,#9aa3b8);line-height:1.5}.ma-import-confirm-x{width:36px;height:36px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:var(--text,#f6f7fb);font-size:24px;line-height:1;cursor:pointer}.ma-import-confirm-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.ma-import-confirm-meta span{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:12px;color:var(--muted,#9aa3b8)}.ma-import-confirm-table{display:grid;gap:8px}.ma-import-confirm-row{display:grid;grid-template-columns:1.05fr 1fr 1fr 1.05fr;gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:13px}.ma-import-confirm-row.head{font-weight:900;color:var(--muted,#9aa3b8);background:transparent;border-color:transparent;padding-bottom:2px}.ma-import-confirm-row span{min-width:0}.ma-import-confirm-row .will-import{color:#bcf7cb;font-weight:900}.ma-import-confirm-row .will-keep{color:#ffe0aa;font-weight:900}.ma-import-confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.ma-import-confirm-actions button{min-width:132px}.ma-import-confirm-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;border:1px solid rgba(148,163,184,.22);background:rgba(15,23,42,.72);color:var(--text,#f6f7fb);font-weight:850;cursor:pointer}.ma-import-confirm-button.ma-primary{background:rgba(45,72,118,.82);border-color:rgba(125,181,255,.44)}.ma-import-confirm-button:hover{background:rgba(30,41,59,.86)}.ma-import-preview-backdrop{display:none!important}@media(max-width:700px){.ma-save-grid{grid-template-columns:1fr!important}.ma-import-confirm-card{padding:16px}.ma-import-confirm-row{grid-template-columns:1fr;gap:4px}.ma-import-confirm-row.head{display:none}.ma-import-confirm-actions{display:grid;grid-template-columns:1fr}.ma-import-confirm-actions button{width:100%}}';
     document.head.appendChild(style);
   }
 
   function rebuildSaveSections(){
     ensureStyle();
-    const drawers = document.querySelectorAll('.profile-drawer,#profileDrawer,.profile-overlay aside');
-    drawers.forEach((drawer) => {
-      const existing = drawer.querySelector('.ma-save-section [data-ma-unified-export]')?.closest('.ma-save-section');
-      if (existing) {
-        drawer.querySelectorAll('.ma-save-section').forEach((old) => { if (old !== existing) old.remove(); });
-        return;
-      }
-      drawer.querySelectorAll('.ma-save-section').forEach((old) => old.remove());
-      const actions = drawer.querySelector('.profile-actions,.drawer-actions') || drawer;
-      const section = document.createElement('div');
-      section.className = 'ma-save-section';
-      section.innerHTML = SECTION_HTML;
-      const actionClass = actions.classList.contains('profile-actions') ? 'profile-action' : 'drawer-action';
-      section.querySelectorAll('button').forEach((btn) => {
-        btn.classList.remove('drawer-action','profile-action');
-        btn.classList.add(actionClass);
-        if (btn.hasAttribute('data-ma-unified-export')) btn.classList.add('primary');
-        if (btn.hasAttribute('data-ma-unified-reset')) btn.classList.add('danger');
-      });
-      actions.insertAdjacentElement('afterend', section);
-    });
     refreshSyncPills();
   }
+
 
   document.addEventListener('click', (event) => {
     const exportBtn = event.target.closest('[data-ma-unified-export]');
@@ -507,12 +608,12 @@
 })();
 
 /* === mode-atlas-late-features.js === */
-/* Shared late features: QoL batch, about panel, achievements. */
+/* Shared late features: trainer runtime bindings and achievements. */
 
-/* === Mode Atlas QOL batch: settings structure, achievements, mistake review, import preview, install prompt, changelog, speed run, empty states === */
-(function ModeAtlasQolBatch(){
-  if (window.__modeAtlasQolBatchLoaded) return;
-  window.__modeAtlasQolBatchLoaded = true;
+/* === Mode Atlas trainer/runtime feature bindings: modifiers, sessions, import preview, empty states === */
+(function ModeAtlasTrainerRuntimeFeatures(){
+  if (window.__modeAtlasTrainerRuntimeFeaturesLoaded) return;
+  window.__modeAtlasTrainerRuntimeFeaturesLoaded = true;
 
   const PAGE = (window.ModeAtlasPageName ? window.ModeAtlasPageName() : (location.pathname.split('/').pop() || 'index.html')).toLowerCase();
   const IS_TRAINER = PAGE === 'default.html' || PAGE === 'reverse.html';
@@ -565,7 +666,7 @@
     try{ if (typeof renderHeatmap === 'function') renderHeatmap(); }catch{}
     try{ if (typeof renderScoreHistory === 'function') renderScoreHistory(); }catch{}
     try{ if (typeof saveAll === 'function') saveAll(); }catch{}
-    setTimeout(markPresetActive, 30);
+    try{ window.ModeAtlas?.refreshTrainerControls?.(); }catch{}
   }
 
   function makeBtn(label, active, onClick, disabled=false){
@@ -576,6 +677,49 @@
     b.setAttribute('aria-pressed', active?'true':'false');
     b.disabled=!!disabled;
     b.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); if(!disabled) onClick(); });
+    return b;
+  }
+
+  function normalisePresetId(id){
+    try{ return window.ModeAtlasPresets?.normaliseId?.(id) || String(id || '').trim().toLowerCase(); }catch{ return String(id || '').trim().toLowerCase(); }
+  }
+  function activePresetId(){
+    try{
+      const branch = IS_WRITING ? 'writing' : 'reading';
+      return window.ModeAtlasPresets?.activePresetFor?.(branch) || '';
+    }catch{
+      return String(localStorage.getItem('modeAtlasActivePreset') || '').toLowerCase();
+    }
+  }
+  function presetList(){
+    const list = window.ModeAtlasPresets?.list;
+    if(Array.isArray(list) && list.length) return list;
+    return [
+      {id:'starter', label:'Starter', desc:'A-row with hints'},
+      {id:'intermediate', label:'Intermediate', desc:'All Hiragana, no hints'},
+      {id:'advanced', label:'Advanced', desc:'Hiragana + Katakana + Dakuten'},
+      {id:'pro', label:'Pro', desc:'Everything enabled'}
+    ];
+  }
+  function makePresetBtn(preset, active){
+    const id = normalisePresetId(preset && preset.id);
+    const b = makeBtn('', active, ()=>{
+      if(!id) return;
+      const target = IS_WRITING ? 'writing' : 'reading';
+      const applied = window.ModeAtlasPresets?.apply?.(id, { target, source: 'modifier-menu', notify: true });
+      if(!applied){
+        window.ModeAtlasTrainerControls?.applyPreset?.(id);
+        return;
+      }
+      try{
+        const current = readJSON(SETTINGS_KEY, {});
+        if(typeof settings === 'object' && settings) Object.assign(settings, current);
+      }catch{}
+      refreshTrainer();
+    });
+    b.classList.add('ma-preset-toggle');
+    b.dataset.preset = id;
+    b.innerHTML = '<span>' + String(preset?.label || id) + '</span><small>' + String(preset?.desc || '') + '</small>';
     return b;
   }
 
@@ -615,52 +759,6 @@
     refreshTrainer();
   }
 
-  function applyPreset(id){
-    const allHira = (typeof hiraganaRows === 'object' && hiraganaRows) ? Object.keys(hiraganaRows) : HIRA_ROWS;
-    const allKata = (typeof katakanaRows === 'object' && katakanaRows) ? Object.keys(katakanaRows) : KATA_ROWS;
-    const presets = {
-      starter:{hint:true,dakuten:false,yoon:false,extendedKatakana:false,confusableKana:false,hiraganaRows:['h_a'],katakanaRows:[]},
-      intermediate:{hint:false,dakuten:false,yoon:false,extendedKatakana:false,confusableKana:false,hiraganaRows:allHira,katakanaRows:[]},
-      advanced:{hint:false,dakuten:true,yoon:false,extendedKatakana:false,confusableKana:false,hiraganaRows:allHira,katakanaRows:allKata},
-      pro:{hint:false,dakuten:true,yoon:true,extendedKatakana:true,confusableKana:false,hiraganaRows:allHira,katakanaRows:allKata}
-    };
-    if(!presets[id]) return;
-    const s = Object.assign({}, trainerSettings(), {
-      srs:true, focusWeak:false, endless:false, timeTrial:false, dailyChallenge:false, testMode:false, comboKana:false, speedRun:false,
-      statsVisible:true, scoresVisible:true, activeBottomTab:'modifiers', optionsOpen:false
-    }, presets[id]);
-    localStorage.setItem('modeAtlasActivePreset', id);
-    localStorage.removeItem('modeAtlasConfusableMode');
-    persistTrainerSettings(s);
-    refreshTrainer();
-    toast(`${presets[id].hint ? 'Starter' : id[0].toUpperCase()+id.slice(1)} preset applied.`, 'ok');
-  }
-
-  function matchesPreset(id){
-    const s=trainerSettings();
-    const allHira = (typeof hiraganaRows === 'object' && hiraganaRows) ? Object.keys(hiraganaRows) : HIRA_ROWS;
-    const allKata = (typeof katakanaRows === 'object' && katakanaRows) ? Object.keys(katakanaRows) : KATA_ROWS;
-    const presets = {
-      starter:{hint:true,dakuten:false,yoon:false,extendedKatakana:false,confusableKana:false,hiraganaRows:['h_a'],katakanaRows:[]},
-      intermediate:{hint:false,dakuten:false,yoon:false,extendedKatakana:false,confusableKana:false,hiraganaRows:allHira,katakanaRows:[]},
-      advanced:{hint:false,dakuten:true,yoon:false,extendedKatakana:false,confusableKana:false,hiraganaRows:allHira,katakanaRows:allKata},
-      pro:{hint:false,dakuten:true,yoon:true,extendedKatakana:true,confusableKana:false,hiraganaRows:allHira,katakanaRows:allKata}
-    };
-    const p=presets[id]; if(!p) return false;
-    const same=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.slice().sort().join('|')===b.slice().sort().join('|');
-    return ['hint','dakuten','yoon','extendedKatakana','confusableKana'].every(k=>!!s[k]===!!p[k]) && same(s.hiraganaRows,p.hiraganaRows) && same(s.katakanaRows,p.katakanaRows);
-  }
-
-  function markPresetActive(){
-    if(!IS_TRAINER) return;
-    const active=localStorage.getItem('modeAtlasActivePreset') || '';
-    $$('[data-preset]').forEach(btn=>{
-      const on = active && btn.dataset.preset===active && matchesPreset(active);
-      btn.classList.toggle('active', !!on);
-      btn.setAttribute('aria-pressed', on?'true':'false');
-    });
-  }
-
   function installStructuredModifierMenu(){
     if(!IS_TRAINER) return;
     const content=$('#modifiersContent'); const stack=$('.options-stack', content); const mod=$('#modifierOptions');
@@ -669,25 +767,9 @@
 
     window.buildModifierButtons = buildModifierButtons = function(){
       const s=trainerSettings();
-      let presetPanel=$('#maPresetMenu');
-      if(!presetPanel){
-        presetPanel=document.createElement('div');
-        presetPanel.id='maPresetMenu';
-        presetPanel.className='ma-settings-section ma-preset-menu';
-        stack.insertBefore(presetPanel, stack.firstChild);
-      }
-      presetPanel.innerHTML = `
-        <div class="section-title">Practice presets</div>
-        <div class="ma-preset-grid">
-          ${[
-            ['starter','Starter','A-row with hints'],
-            ['intermediate','Intermediate','All Hiragana, no hints'],
-            ['advanced','Advanced','Hiragana + Katakana + Dakuten'],
-            ['pro','Pro','Everything enabled']
-          ].map(([id,title,desc])=>`<button type="button" class="ma-preset-btn" data-preset="${id}"><span>${title}</span><small>${desc}</small></button>`).join('')}
-        </div>`;
-
+      const activePreset = activePresetId();
       const groups=[
+        ['Study presets', presetList().map(p => Object.assign({ type:'preset' }, p))],
         ['Question flow', [
           ['srs','SRS'], ['endless','Endless'], ['timeTrial','Time Trial'], ['speedRun','Speed Run'], ['dailyChallenge','Daily Challenge'], ['testMode','Test Mode']
         ]],
@@ -708,17 +790,15 @@
         head.textContent=title;
         const grid=document.createElement('div');
         grid.className='ma-modifier-group-grid';
-        items.forEach(([key,label])=>grid.appendChild(makeBtn(label, !!s[key], ()=>modeToggle(key))));
+        items.forEach(item=>{
+          if(item && item.type === 'preset') grid.appendChild(makePresetBtn(item, activePreset === normalisePresetId(item.id)));
+          else { const [key,label] = item; grid.appendChild(makeBtn(label, !!s[key], ()=>modeToggle(key))); }
+        });
         section.append(head,grid);
         mod.appendChild(section);
       });
-      markPresetActive();
+      try{ window.ModeAtlas?.refreshTrainerControls?.(); }catch{}
     };
-
-    document.addEventListener('click', e=>{
-      const preset=e.target.closest?.('[data-preset]');
-      if(preset){ e.preventDefault(); e.stopPropagation(); applyPreset(preset.dataset.preset); }
-    }, true);
 
     try{ buildModifierButtons(); }catch{ if(old) old(); }
   }
@@ -959,342 +1039,20 @@
     }, true);
   }
 
-  function installWhatsNew(){
-    const version=(window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || '2.11.5';
-    const changes=[
-      'Cleaner install behaviour: the app now asks once and stays available from the profile menu.',
-      'Improved save and sync readiness.',
-      'More reliable app updates after a new release.',
-      'Small profile and status wording polish.'
-    ];
-    const signature = version + '::' + changes.join('|');
-    const seenVersionKey = 'maWhatsNewSeenVersion';
-    const seenSignatureKey = 'maWhatsNewSeenSignature';
-    function markSeen(){
-      try {
-        localStorage.setItem(seenVersionKey, version);
-        localStorage.setItem(seenSignatureKey, signature);
-        localStorage.setItem('maWhatsNewSeen', version);
-      } catch {}
-    }
-    function shouldAutoShow(){
-      try {
-        return localStorage.getItem(seenVersionKey) !== version || localStorage.getItem(seenSignatureKey) !== signature;
-      } catch { return true; }
-    }
-    function open(){
-      let modal=$('#maWhatsNew');
-      if(!modal){
-        modal=document.createElement('div');
-        modal.id='maWhatsNew';
-        modal.className='ma-whats-new-backdrop';
-        modal.innerHTML=`<div class="ma-whats-new-modal">
-          <h2>What’s new</h2>
-          <p>Mode Atlas has a new polish update focused on cleaner menus, safer save handling, and clearer account information.</p>
-          <ul>${changes.map(c=>`<li>${c}</li>`).join('')}</ul>
-          <button type="button" data-ma-whats-new-close>Done</button>
-        </div>`;
-        document.body.appendChild(modal);
-        modal.addEventListener('click', e=>{ if(e.target===modal || e.target.closest('[data-ma-whats-new-close]')) { modal.classList.remove('open'); markSeen(); } });
-      }
-      modal.classList.add('open');
-      markSeen();
-    }
-    window.ModeAtlas=window.ModeAtlas||{};
-    window.ModeAtlas.showWhatsNew=open;
-    setTimeout(()=>{
-      const drawer=$('#profileDrawer');
-      if(false && drawer && !$('#maWhatsNewProfileBtn')){
-        const btn=document.createElement('button');
-        btn.id='maWhatsNewProfileBtn';
-        btn.type='button';
-        btn.className='profile-action';
-        btn.textContent='What’s new';
-        btn.addEventListener('click', open);
-        const actions=$('.profile-actions', drawer) || drawer;
-        actions.appendChild(btn);
-      }
-      if(shouldAutoShow() && ['index.html','kana.html'].includes(PAGE)) open();
-    }, 1200);
-  }
-
-  function installPwaPolish(){
-    let deferredPrompt=null;
-    const PROMPT_SEEN_KEY='modeAtlasInstallPromptSeen';
-    const PROMPT_DISMISSED_AT_KEY='modeAtlasInstallPromptDismissedAt';
-    function isStandalone(){
-      try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch { return false; }
-    }
-    function hasSeenPrompt(){
-      try { return localStorage.getItem(PROMPT_SEEN_KEY) === '1'; } catch { return true; }
-    }
-    function markPromptSeen(){
-      try {
-        localStorage.setItem(PROMPT_SEEN_KEY, '1');
-        localStorage.setItem(PROMPT_DISMISSED_AT_KEY, String(Date.now()));
-      } catch {}
-    }
-    window.ModeAtlasInstall = window.ModeAtlasInstall || {};
-    window.ModeAtlasInstall.show = async function(){
-      if(deferredPrompt){
-        try { deferredPrompt.prompt(); await deferredPrompt.userChoice; } catch {}
-        deferredPrompt=null;
-        markPromptSeen();
-        $('#maInstallPrompt')?.remove();
-        return true;
-      }
-      const msg='To install Mode Atlas, use your browser menu or, on iPad, Share → Add to Home Screen.';
-      if(window.ModeAtlasToast) window.ModeAtlasToast(msg);
-      else alert(msg);
-      return false;
-    };
-    window.addEventListener('beforeinstallprompt', e=>{
-      e.preventDefault();
-      deferredPrompt=e;
-      window.ModeAtlasInstall.deferredPrompt=e;
-      if(!hasSeenPrompt() && !isStandalone()) showInstall();
-    });
-    window.addEventListener('appinstalled', ()=>{ markPromptSeen(); deferredPrompt=null; $('#maInstallPrompt')?.remove(); });
-    function showInstall(){
-      if($('#maInstallPrompt') || !deferredPrompt || hasSeenPrompt() || isStandalone()) return;
-      const prompt=document.createElement('div');
-      prompt.id='maInstallPrompt';
-      prompt.className='ma-install-prompt';
-      prompt.innerHTML='<div><b>Install Mode Atlas</b><span>Add it to your device for faster access and a full-screen study experience. You can also install later from the profile menu.</span></div><button type="button" data-ma-install>Install</button><button type="button" data-ma-install-close>Not now</button>';
-      document.body.appendChild(prompt);
-      prompt.addEventListener('click', async e=>{
-        if(e.target.closest('[data-ma-install-close]')){ markPromptSeen(); prompt.remove(); }
-        if(e.target.closest('[data-ma-install]')){ await window.ModeAtlasInstall.show(); }
-      });
-    }
-
-  }
   function boot(){
     installStructuredModifierMenu();
+    try{ window.ModeAtlasTrainerControls?.refresh?.(); }catch{}
     installSessionUpgrades();
     installPresetChecklist();
     installNoDataStates();
     installImportPreview();
-    installWhatsNew();
-    installPwaPolish();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   window.addEventListener('pageshow', ()=>setTimeout(boot,100));
 })();
-(function ModeAtlasAbout(){
-  if (window.__modeAtlasAboutLoaded) return;
-  window.__modeAtlasAboutLoaded = true;
-
-  const APP_VERSION = (window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || '2.11.5';
-  const SAVE_SCHEMA_VERSION = '3';
-  const BUILD_LABEL = 'Professional Polish Update';
-  const BUILD_DATE = '2026-05-01';
-  const DEVELOPER = 'Jack Wright';
-  const SUPPORT_EMAIL = 'support@mode-atlas.com';
-  const OFFICIAL_SITE = 'mode-atlas.app';
-
-  function $(sel, root=document){ return root.querySelector(sel); }
-  function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
-  function fmtDate(ts){
-    const n = Number(ts || 0);
-    if (!Number.isFinite(n) || !n) return 'Never';
-    const d = new Date(n);
-    if (Number.isNaN(d.getTime())) return 'Never';
-    return d.toLocaleString([], { hour:'numeric', minute:'2-digit', day:'numeric', month:'short', year:'numeric' });
-  }
-  function safeJSON(key, fallback){ try{ const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch{ return fallback; } }
-  function latestTimestamp(keys){
-    let best = 0;
-    keys.forEach(k=>{
-      const n = Number(localStorage.getItem(k) || 0);
-      if (Number.isFinite(n) && n > best) best = n;
-    });
-    return best;
-  }
-  function getCloudStatus(){
-    const user = window.KanaCloudSync?.getUser?.() || window.currentUser || null;
-    const signedIn = !!user;
-    const online = navigator.onLine !== false;
-    const lastSync = latestTimestamp([
-      'modeAtlasLastCloudSyncAt','modeAtlasLastSyncCheck','cloudReadingUpdatedAt','cloudWritingUpdatedAt','testModeResultsUpdatedAt','readingTestModeResultsUpdatedAt','writingTestModeResultsUpdatedAt','kanaWordBankUpdatedAt'
-    ]);
-    let mode = 'Local only';
-    let status = 'Local saving active';
-    if (signedIn && online){ mode = 'Cloud + local'; status = 'Cloud available'; }
-    else if (signedIn && !online){ mode = 'Cloud account offline'; status = 'No cloud access'; }
-    return { signedIn, online, mode, status, lastSync };
-  }
-  function getAppInfo(){
-    const cloud = getCloudStatus();
-    return {
-      version: APP_VERSION,
-      saveSchema: SAVE_SCHEMA_VERSION,
-      build: BUILD_LABEL,
-      buildDate: BUILD_DATE,
-      page: (location.pathname.split('/').pop() || 'index.html'),
-      theme: localStorage.getItem('modeAtlasThemePreference') || 'dark',
-      saveMode: cloud.mode,
-      cloudStatus: cloud.status,
-      signedIn: cloud.signedIn ? 'Yes' : 'No',
-      online: cloud.online ? 'Yes' : 'No',
-      lastCloudSync: fmtDate(cloud.lastSync),
-      localSaveUpdated: fmtDate(latestTimestamp([
-        'settingsUpdatedAt','resultsUpdatedAt','srsUpdatedAt','dailyUpdatedAt','profileUpdatedAt','modeAtlasLastSyncCheck','kanaWordBankUpdatedAt'
-      ])),
-      installSupport: window.ModeAtlasEnv?.canUsePwa ? 'Available' : 'Not available here',
-      supportEmail: SUPPORT_EMAIL,
-      storage: (()=>{ try{ localStorage.setItem('__ma_probe','1'); localStorage.removeItem('__ma_probe'); return 'Available'; }catch{return 'Blocked';} })()
-    };
-  }
-
-  const whatsNewItems = [
-    'Cleaner install behaviour: the app asks once, then stays available from the profile menu.',
-    'Improved save and sync readiness.',
-    'More reliable update handling after new releases.',
-    'Small polish across profile, save, and status wording.'
-  ];
-
-  function ensureAboutModal(){
-    let backdrop = $('#maAboutBackdrop');
-    if (backdrop) return backdrop;
-    backdrop = document.createElement('div');
-    backdrop.id = 'maAboutBackdrop';
-    backdrop.className = 'ma-about-backdrop';
-    backdrop.innerHTML = `
-      <section class="ma-about-modal" role="dialog" aria-modal="true" aria-labelledby="maAboutTitle">
-        <div class="ma-about-hero">
-          <div class="ma-about-mark">かな</div>
-          <div>
-            <div class="ma-about-kicker">Mode Atlas</div>
-            <h2 id="maAboutTitle">About Mode Atlas</h2>
-            <p>Japanese study tools for kana recognition, recall, review, and connected learning branches.</p>
-          </div>
-          <button type="button" class="ma-about-close" data-ma-about-close aria-label="Close About">Close</button>
-        </div>
-
-        <div class="ma-about-tabs" role="tablist" aria-label="About sections">
-          <button type="button" class="active" data-ma-about-tab="overview">Overview</button>
-          <button type="button" data-ma-about-tab="whatsnew">What’s new</button>
-          <button type="button" data-ma-about-tab="legal">Legal</button>
-        </div>
-
-        <div class="ma-about-panel active" data-ma-about-panel="overview">
-          <div class="ma-about-grid">
-            <article class="ma-about-card"><span>App version</span><strong data-ma-info="version"></strong><small>Current app release installed in this build.</small></article>
-            <article class="ma-about-card"><span>Save version</span><strong data-ma-info="saveSchema"></strong><small>Helps keep backups compatible across app updates.</small></article>
-            <article class="ma-about-card"><span>Build</span><strong data-ma-info="build"></strong><small data-ma-info="buildDate"></small></article>
-            <article class="ma-about-card"><span>Install support</span><strong data-ma-info="installSupport"></strong><small>Add Mode Atlas to your device for quicker access.</small></article>
-          </div>
-
-          <div class="ma-about-section">
-            <h3>Account & save status</h3>
-            <div class="ma-about-table">
-              <div><span>Save mode</span><strong data-ma-info="saveMode"></strong></div>
-              <div><span>Sync status</span><strong data-ma-info="cloudStatus"></strong></div>
-              <div><span>Signed in</span><strong data-ma-info="signedIn"></strong></div>
-              <div><span>Connection</span><strong data-ma-info="online"></strong></div>
-              <div><span>Last cloud sync</span><strong data-ma-info="lastCloudSync"></strong></div>
-              <div><span>Local save updated</span><strong data-ma-info="localSaveUpdated"></strong></div>
-              <div><span>Storage access</span><strong data-ma-info="storage"></strong></div>
-              <div><span>Theme preference</span><strong data-ma-info="theme"></strong></div>
-            </div>
-          </div>
-
-          <div class="ma-about-section ma-about-credit">
-            <h3>Developer</h3>
-            <p><strong>Created by ${DEVELOPER}</strong></p>
-            <p>Designed and built as a focused Japanese study ecosystem.</p>
-            <p>Support: <a href="mailto:support@mode-atlas.com">support@mode-atlas.com</a> · <a href="https://mode-atlas.app/" target="_blank" rel="noopener">mode-atlas.app</a></p>
-            <p class="ma-about-muted">© 2026 ${DEVELOPER}. All rights reserved.</p>
-          </div>
-        </div>
-
-        <div class="ma-about-panel" data-ma-about-panel="whatsnew">
-          <div class="ma-about-section">
-            <h3>What’s new in this build</h3>
-            <p class="ma-about-muted">Recent improvements that affect everyday use.</p>
-            <ul class="ma-about-list">${whatsNewItems.map(item=>`<li>${item}</li>`).join('')}</ul>
-            <button type="button" class="ma-about-primary" data-ma-open-legacy-whats-new>Open full update notes</button>
-          </div>
-        </div>
-
-        <div class="ma-about-panel" data-ma-about-panel="legal">
-          <div class="ma-about-section">
-            <h3>Privacy & data</h3>
-            <p>Mode Atlas saves learning progress on this device. Signing in lets supported progress follow you across devices.</p>
-            <p>Local backups are user-controlled exports. Importing a backup should merge with newer local/cloud sections rather than blindly replacing current progress.</p>
-          </div>
-          <div class="ma-about-section">
-            <h3>Disclaimer</h3>
-            <p>Mode Atlas is a study aid. It is not an official language certification tool and does not guarantee language proficiency outcomes.</p>
-          </div>
-          <div class="ma-about-section">
-            <h3>Credits & ownership</h3>
-            <p>Mode Atlas, its app structure, and learning interface are developed by ${DEVELOPER}. Japanese kana characters are part of the Japanese writing system and are not proprietary.</p>
-          </div>
-        </div>
-      </section>`;
-    document.body.appendChild(backdrop);
-    backdrop.addEventListener('click', (e)=>{
-      if (e.target === backdrop || e.target.closest('[data-ma-about-close]')) closeAbout();
-      const tab = e.target.closest('[data-ma-about-tab]');
-      if (tab) switchAboutTab(tab.dataset.maAboutTab);
-      if (e.target.closest('[data-ma-open-legacy-whats-new]')) {
-        e.preventDefault();
-        if (window.ModeAtlas?.showWhatsNew) window.ModeAtlas.showWhatsNew();
-      }
-    });
-    return backdrop;
-  }
-  function switchAboutTab(name){
-    const b = ensureAboutModal();
-    $all('[data-ma-about-tab]', b).forEach(btn=>btn.classList.toggle('active', btn.dataset.maAboutTab === name));
-    $all('[data-ma-about-panel]', b).forEach(panel=>panel.classList.toggle('active', panel.dataset.maAboutPanel === name));
-  }
-  function renderAbout(){
-    const b = ensureAboutModal();
-    const info = getAppInfo();
-    Object.entries(info).forEach(([key,val])=>{
-      $all(`[data-ma-info="${key}"]`, b).forEach(node=>{ node.textContent = String(val); });
-    });
-  }
-  function openAbout(tab='overview'){
-    renderAbout();
-    switchAboutTab(tab);
-    ensureAboutModal().classList.add('open');
-  }
-  function closeAbout(){ const b=$('#maAboutBackdrop'); if(b) b.classList.remove('open'); }
-
-  function installProfileButton(){
-    const drawers = $all('.profile-drawer,#profileDrawer,.profile-overlay aside,.drawer-panel');
-    drawers.forEach(drawer=>{
-      // Remove direct What’s New buttons where possible; About now owns it.
-      $all('[data-ma-whats-new],#maWhatsNewProfileBtn', drawer).forEach(btn=>btn.remove());
-
-      // The QOL profile App panel owns the visible About button. Older builds
-      // injected a second standalone button near the top of the drawer, so keep
-      // only About buttons that live inside the App/tools panel.
-      $all('[data-ma-about-open]', drawer).forEach(btn=>{
-        if (!btn.closest('.ma-tools-panel')) btn.remove();
-      });
-    });
-  }
-
-  document.addEventListener('click', (e)=>{
-    if (e.target.closest('[data-ma-about-open]')) { e.preventDefault(); openAbout(); }
-  }, true);
-
-  window.ModeAtlas = window.ModeAtlas || {};
-  window.ModeAtlas.openAbout = openAbout;
-  window.ModeAtlas.appInfo = getAppInfo;
-
-  function boot(){ installProfileButton(); setTimeout(installProfileButton, 800); setTimeout(installProfileButton, 1800); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  new MutationObserver(()=>installProfileButton()).observe(document.documentElement,{childList:true,subtree:true});
-})();
 (function(){
   'use strict';
-  const VERSION = (window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || '2.11.5';
+  const VERSION = (window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || window.ModeAtlasVersion || 'dev-local';
   const HIRA = ['あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ','た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ','ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'];
   const KATA = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','マ','ミ','ム','メ','モ','ヤ','ユ','ヨ','ラ','リ','ル','レ','ロ','ワ','ヲ','ン'];
   const DAK = ['が','ぎ','ぐ','げ','ご','ざ','じ','ず','ぜ','ぞ','だ','ぢ','づ','で','ど','ば','び','ぶ','べ','ぼ','ぱ','ぴ','ぷ','ぺ','ぽ','ガ','ギ','グ','ゲ','ゴ','ザ','ジ','ズ','ゼ','ゾ','ダ','ヂ','ヅ','デ','ド','バ','ビ','ブ','ベ','ボ','パ','ピ','プ','ペ','ポ'];
@@ -1532,16 +1290,10 @@
   }
   function closeModal(){ const shell=document.getElementById('maFeatureModal'); if(shell) shell.classList.remove('open'); const p=document.getElementById('maAchievementInfo'); if(p) p.classList.remove('open'); }
   function cleanProfileButtons(){
-    document.querySelectorAll('.profile-drawer,#profileDrawer').forEach(drawer=>{
+    document.querySelectorAll('.ma-shared-profile-drawer').forEach(drawer=>{
       const buttons=[...drawer.querySelectorAll('[data-ma-achievements-open]')];
-      if(!buttons.length) return;
-      const appButtons=buttons.filter(btn=>btn.closest('.ma-tools-panel'));
-      const keep=appButtons[0] || buttons[0];
+      const keep=buttons.find(btn=>btn.closest('.ma-achievement-card-summary')) || buttons[0];
       buttons.forEach(btn=>{ if(btn!==keep) btn.remove(); });
-      if(keep && !keep.closest('.ma-tools-panel')){
-        const appGrid=drawer.querySelector('.ma-tools-panel .ma-qol-grid');
-        if(appGrid) appGrid.appendChild(keep);
-      }
     });
   }
   function injectMasteryButton(){
@@ -1574,7 +1326,7 @@
 
   const SIGN_IN_SELECTORS = '#profileSignInBtn,#studyProfileSignIn,#identitySignInBtn,[data-profile-sign-in],[data-ma-sign-in]';
   const SIGN_OUT_SELECTORS = '#profileSignOutBtn,#studyProfileSignOut,#identitySignOutBtn,[data-profile-sign-out],[data-ma-sign-out]';
-  const DRAWER_SELECTORS = '.profile-drawer,#profileDrawer,.profile-overlay,.drawer-panel,.profile-modal,.profile-menu,.ma-profile-drawer';
+  const DRAWER_SELECTORS = '.ma-shared-profile-drawer,#profileDrawer';
 
   function all(sel, root){ return Array.from((root || document).querySelectorAll(sel)); }
   function getUser(){ try { return window.KanaCloudSync && typeof window.KanaCloudSync.getUser === 'function' ? window.KanaCloudSync.getUser() : null; } catch { return null; } }
@@ -1612,7 +1364,7 @@
     btn.removeAttribute('data-ma-sign-in');
     btn.removeAttribute('data-ma-sign-out');
     btn.textContent = isIn ? 'Sign out' : 'Sign in';
-    btn.classList.toggle('primary', !isIn);
+    btn.classList.toggle('ma-primary', !isIn);
   }
   function chooseMain(root, buttons){
     const existing = buttons.find(el => el.hasAttribute('data-ma-auth-main') && !el.classList.contains('ma-auth-removed'));

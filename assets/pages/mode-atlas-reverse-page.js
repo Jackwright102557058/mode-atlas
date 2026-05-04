@@ -1475,7 +1475,7 @@ function onSettingsChanged() {
 
 function makeExportPayload() {
     return window.ModeAtlasTrainerCore.buildExportPayload({
-        version: "2.11.5-writing-practice",
+        version: ((window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || window.ModeAtlasVersion || "dev-local"),
         settings,
         stats,
         times,

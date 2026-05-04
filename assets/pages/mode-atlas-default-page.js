@@ -23,41 +23,17 @@ const DEFAULT_SETTINGS = {
 try{
   const params = new URLSearchParams(location.search);
   const requested = params.get("starter") || window.ModeAtlasStorage.get("modeAtlasStartReadingPreset", "") || "";
-  const preset = requested === "a-row" ? "starter" : requested;
+  const preset = window.ModeAtlasPresets?.normaliseId?.(requested) || (requested === "a-row" ? "starter" : requested);
   if (!preset) return;
-  const allHiragana = Object.keys(hiraganaRows);
-  const allKatakana = Object.keys(katakanaRows);
-  const presetMap = {
-    starter: { hint: true, dakuten: false, yoon: false, extendedKatakana: false, hiraganaRows: ["h_a"], katakanaRows: [] },
-    intermediate: { hint: false, dakuten: false, yoon: false, extendedKatakana: false, hiraganaRows: allHiragana, katakanaRows: [] },
-    advanced: { hint: false, dakuten: true, yoon: false, extendedKatakana: false, hiraganaRows: allHiragana, katakanaRows: allKatakana },
-    pro: { hint: false, dakuten: true, yoon: true, extendedKatakana: true, hiraganaRows: allHiragana, katakanaRows: allKatakana }
-  };
-  if (!presetMap[preset]) return;
+  const applied = window.ModeAtlasPresets?.apply?.(preset, { target: "both" });
+  if (!applied) return;
   const current = window.ModeAtlasStorage.json("settings", {}) || {};
-  Object.assign(current, {
-    focusWeak: false,
-    srs: true,
-    endless: false,
-    timeTrial: false,
-    dailyChallenge: false,
-    testMode: false,
-    comboKana: false,
-    mobileMode: false,
-    statsVisible: true,
-    scoresVisible: true,
-    activeBottomTab: "modifiers",
-    optionsOpen: false
-  }, presetMap[preset]);
-  window.ModeAtlasStorage.setJSON("settings", current);
-  window.ModeAtlasStorage.now("settingsUpdatedAt");
+  try{ if (typeof settings === "object" && settings) Object.assign(settings, current); }catch{}
   window.ModeAtlasStorage.set("modeAtlasStarterSeen", "true");
-  window.ModeAtlasStorage.set("modeAtlasActivePreset", preset);
   window.ModeAtlasStorage.remove("modeAtlasStartReadingPreset");
-  if (window.KanaCloudSync?.markSectionUpdated) window.KanaCloudSync.markSectionUpdated("reading");
   if (history.replaceState && location.search) history.replaceState(null, "", location.pathname);
 }catch(err){console.warn("Mode Atlas starter preset failed",err)}
-})();
+})();;
 let settings = { ...DEFAULT_SETTINGS, ...loadJSON("settings", DEFAULT_SETTINGS) };
 
 normalizeLegacyRowSelection();
@@ -1105,7 +1081,7 @@ sessionModalBackdrop.addEventListener("click", (e) => {
 
 function makeExportPayload() {
     return window.ModeAtlasTrainerCore.buildExportPayload({
-        version: "2.11.5",
+        version: ((window.ModeAtlasEnv && window.ModeAtlasEnv.appVersion) || window.ModeAtlasVersion || "dev-local"),
         settings,
         stats,
         times,

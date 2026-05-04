@@ -1,11 +1,16 @@
 /* Mode Atlas stable trainer controls: final owner for presets + modifier toggles. */
 (function ModeAtlasStableControls(){
-  const page=(location.pathname.split('/').pop()||'').toLowerCase();
-  if(page!=='default.html' && page!=='reverse.html') return;
+  const resolvedPage=(window.ModeAtlasPageName ? window.ModeAtlasPageName() : (location.pathname.split('/').pop()||'')).toLowerCase();
+  function isTrainerDocument(){
+    return resolvedPage==='default.html' || resolvedPage==='reverse.html' ||
+      !!document.querySelector('#modifiersContent,#modifierOptions,#rowOptions,#katakanaRowOptions') ||
+      document.body?.classList?.contains('ma-reading-page') ||
+      document.body?.classList?.contains('ma-writing-page');
+  }
   if(window.__modeAtlasStableControlsLoaded) return;
   window.__modeAtlasStableControlsLoaded=true;
 
-  const isWriting=page==='reverse.html';
+  const isWriting=resolvedPage==='reverse.html' || document.body?.classList?.contains('ma-writing-page') || /\/writing\/?$/i.test(location.pathname || '');
   const storeKey=isWriting?'reverseSettings':'settings';
   const pageAccent=isWriting?'writing':'reading';
   const CONFUSABLE_CHARS=new Set(['シ','ツ','ソ','ン','ぬ','め','れ','わ','ね','ク','ケ','タ','ナ','メ']);
@@ -47,6 +52,7 @@
   function sameArr(a,b){a=arr(a);b=arr(b);return a.length===b.length&&a.every((x,i)=>x===b[i]);}
   function bool(v){return !!v;}
   function matchesPreset(id){
+    if(window.ModeAtlasPresets?.matchesSettings) return window.ModeAtlasPresets.matchesSettings(getSettings(), id);
     const p=PRESETS[String(id||'').toLowerCase()]; const s=getSettings();
     if(!p) return false;
     for(const k of ['hint','srs','dakuten','yoon','extendedKatakana','confusableKana']) if(bool(s[k])!==bool(p[k])) return false;
@@ -76,15 +82,21 @@
     if(had){setActivePreset(''); if(showToast) toast('Custom practice modes chosen · presets turned off.','warn');}
   }
   function applyPreset(id){
-    id=String(id||'').toLowerCase(); const p=PRESETS[id]; if(!p) return;
-    setSettings(Object.assign({
-      focusWeak:false,endless:false,timeTrial:false,dailyChallenge:false,testMode:false,comboKana:false,speedRun:false,
-      mobileMode:false,statsVisible:true,scoresVisible:true,activeBottomTab:'modifiers',optionsOpen:false
-    },p));
-    localStorage.removeItem('modeAtlasConfusableMode');
-    setActivePreset(id);
+    id = window.ModeAtlasPresets?.normaliseId?.(id) || String(id || '').toLowerCase();
+    const p = window.ModeAtlasPresets?.get?.(id) || PRESETS[id];
+    if(!p) return;
+    if(window.ModeAtlasPresets?.apply?.(id, { target: 'both', source: 'trainer-controls', notify: true })){
+      const current = readJSON(storeKey, {});
+      try{ if(typeof settings === 'object' && settings) Object.assign(settings, current); }catch{}
+    }else{
+      setSettings(Object.assign({
+        focusWeak:false,endless:false,timeTrial:false,dailyChallenge:false,testMode:false,comboKana:false,speedRun:false,
+        mobileMode:false,statsVisible:true,scoresVisible:true,activeBottomTab:'modifiers',optionsOpen:false
+      },p));
+      localStorage.removeItem('modeAtlasConfusableMode');
+      setActivePreset(id);
+    }
     saveAndRefresh();
-    toast(p.label+' preset applied.','ok');
   }
   function toggleMode(key){
     const s=getSettings();
@@ -170,8 +182,8 @@
   function markActive(){
     const s=getSettings();
     const active=inferActivePreset();
-    if(active){window.__maStableActivePreset=active;localStorage.setItem('modeAtlasActivePreset',active);} else {window.__maStableActivePreset='';}
-    document.querySelectorAll('[data-preset]').forEach(btn=>{
+    if(active){window.__maStableActivePreset=active;} else {window.__maStableActivePreset='';}
+    document.querySelectorAll('#modifierOptions [data-preset]').forEach(btn=>{
       const on=!!active && btn.dataset.preset===active;
       btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',on?'true':'false');
     });
@@ -210,11 +222,19 @@
       }
     }catch{}
   }
+
+
+
   function install(){
+    if(!isTrainerDocument()) return;
     document.body.classList.toggle('ma-reading-page',!isWriting);
     document.body.classList.toggle('ma-writing-page',isWriting);
     filterConfusableHeatmap(); bootFromHub(); markActive();
   }
+  window.ModeAtlasTrainerControls = Object.assign(window.ModeAtlasTrainerControls || {}, {
+    refresh: function(){ install(); },
+    applyPreset
+  });
   window.addEventListener('click',handleClick,true);
   window.addEventListener('keydown',function(e){
     if(e.key!=='Enter'&&e.key!==' ') return;
@@ -225,5 +245,9 @@
   window.ModeAtlas.applyPracticePreset=applyPreset;
   window.ModeAtlas.refreshTrainerControls=markActive;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-  setTimeout(install,120); setTimeout(markActive,500); setInterval(markActive,350);
+  setTimeout(install,120);
+  setTimeout(install,500);
+  window.addEventListener('load',()=>setTimeout(install,0));
+  window.addEventListener('pageshow',()=>setTimeout(install,80));
+  window.addEventListener('modeAtlasPresetChanged',()=>setTimeout(install,0));
 })();

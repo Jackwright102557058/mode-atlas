@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../assets/app/mode-atlas-version.js"></script>
 <script src="../assets/app/mode-atlas-head-bootstrap.js"></script>
 
 <meta charset="UTF-8" />
@@ -27,32 +28,27 @@
 
 <link rel="stylesheet" href="../assets/css/mode-atlas-kana-page.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-page-shared.css">
-<link rel="stylesheet" href="../assets/css/mode-atlas-qol.css" />
-<script defer src="../assets/app/mode-atlas-qol.js"></script>
+<link rel="stylesheet" href="../assets/css/mode-atlas-app-polish.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-kana-dashboard.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-results-insights.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-achievements.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-theme.css" />
+<script defer src="../assets/app/mode-atlas-toast.js"></script>
+<script defer src="../assets/app/mode-atlas-theme.js"></script>
+<script defer src="../assets/app/mode-atlas-save-repair.js"></script>
+<script defer src="../assets/app/mode-atlas-page-state.js"></script>
+<script defer src="../assets/app/mode-atlas-dev-console.js"></script>
+<script defer src="../assets/app/mode-atlas-pwa.js"></script>
+<script defer src="../assets/app/mode-atlas-about.js"></script>
+<script defer src="../assets/app/mode-atlas-kana-metrics.js"></script>
+<script defer src="../assets/pages/mode-atlas-kana-dashboard.js"></script>
+<script defer src="../assets/results/mode-atlas-results-insights.js"></script>
+<script defer src="../assets/app/mode-atlas-confusable-mode.js"></script>
 <script src="../assets/app/mode-atlas-storage.js"></script>
+<script src="../assets/app/mode-atlas-presets.js"></script>
 </head>
 <body><script src="../assets/app/mode-atlas-early-loader.js"></script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
-
-<div class="drawer-backdrop" id="profileBackdrop"></div>
-<aside class="profile-drawer" id="profileDrawer" aria-hidden="true">
-    <div class="drawer-head">
-        <div class="drawer-title">Profile</div>
-        <button class="drawer-close" id="profileCloseBtn" type="button">Close</button>
-    </div>
-    <div class="drawer-user">
-        <img class="drawer-avatar" id="profileAvatar" alt="" />
-        <div>
-            <div class="drawer-name" id="profileName">Guest</div>
-            <div class="drawer-email" id="profileEmail">Not signed in</div>
-        </div>
-    </div>
-    <div class="drawer-status" id="profileStatus">Sign in on Mode Atlas to sync your learning across devices.</div>
-    <div class="drawer-actions">
-        <button class="drawer-action primary" id="profileSignInBtn" data-profile-sign-in type="button">Sign in</button>
-        <button class="drawer-action" id="profileSignOutBtn" data-profile-sign-out type="button" style="display:none;">Sign out</button>
-        <a class="drawer-action" href="../">Mode Atlas</a>
-    </div>
-</aside>
 <div class="shell">
         <nav class="branch-nav" aria-label="Kana Trainer navigation">
             <a class="branch-brand" href="../" aria-label="Back to Mode Atlas">
@@ -119,7 +115,7 @@
                     </a>
                 </div>
 
-                <div class="footer-note" style="text-align:left; margin-top:6px;">Kana Trainer Home · v2.11.5</div>
+                <div class="footer-note" style="text-align:left; margin-top:6px;">Kana Trainer Home · v<span data-ma-app-version></span></div>
             </div>
 
             <div class="hero-side">
@@ -265,10 +261,12 @@
 </div>
 
 
-<script src="../assets/ui/mode-atlas-profile-drawer-bindings.js"></script>
-
 <script src="../firebase-config.js"></script>
 <script src="../cloud-sync.js"></script>
+<script src="../assets/ui/mode-atlas-profile-menu.js"></script>
+<script src="../assets/ui/mode-atlas-settings-menu.js"></script>
+<script src="../assets/ui/mode-atlas-profile-drawer-bindings.js"></script>
+
 <script src="../assets/pages/mode-atlas-kana-page.js"></script>
 
 

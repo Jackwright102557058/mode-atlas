@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../assets/app/mode-atlas-version.js"></script>
 <script src="../assets/app/mode-atlas-head-bootstrap.js"></script>
 
 <meta charset="UTF-8" />
@@ -28,9 +29,25 @@
 <link rel="stylesheet" href="../assets/css/mode-atlas-default-page.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-page-shared.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-study-shared.css">
-<link rel="stylesheet" href="../assets/css/mode-atlas-qol.css" />
-<script defer src="../assets/app/mode-atlas-qol.js"></script>
+<link rel="stylesheet" href="../assets/css/mode-atlas-app-polish.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-kana-dashboard.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-results-insights.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-achievements.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-theme.css" />
+<script defer src="../assets/app/mode-atlas-toast.js"></script>
+<script defer src="../assets/app/mode-atlas-theme.js"></script>
+<script defer src="../assets/app/mode-atlas-save-repair.js"></script>
+<script defer src="../assets/app/mode-atlas-page-state.js"></script>
+<script defer src="../assets/app/mode-atlas-dev-console.js"></script>
+<script defer src="../assets/app/mode-atlas-pwa.js"></script>
+<script defer src="../assets/app/mode-atlas-about.js"></script>
+<script defer src="../assets/app/mode-atlas-kana-metrics.js"></script>
+<script defer src="../assets/pages/mode-atlas-kana-dashboard.js"></script>
+<script defer src="../assets/results/mode-atlas-results-insights.js"></script>
+<script defer src="../assets/app/mode-atlas-confusable-mode.js"></script>
 <script src="../assets/app/mode-atlas-storage.js"></script>
+<script src="../assets/app/mode-atlas-presets.js"></script>
 </head>
 <body class="ma-reading-page"><script src="../assets/app/mode-atlas-early-loader.js"></script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
 
@@ -172,34 +189,6 @@
         </div>
     </div>
 </div>
-
-
-<div class="profile-overlay" id="studyProfileOverlay" aria-hidden="true">
-    <aside class="profile-drawer" role="dialog" aria-modal="true" aria-labelledby="studyProfileTitle">
-        <div class="profile-top">
-            <div>
-                <div class="profile-kicker">Profile</div>
-                <div class="profile-title" id="studyProfileTitle">Study identity</div>
-            </div>
-            <button class="profile-close" id="studyProfileClose" type="button" aria-label="Close profile">×</button>
-        </div>
-        <div class="profile-card">
-            <div class="profile-user">
-                <img class="profile-avatar" id="studyProfileAvatar" alt="" />
-                <div>
-                    <div class="profile-name" id="studyProfileName">Guest</div>
-                    <div class="profile-email" id="studyProfileEmail">Not signed in</div>
-                </div>
-            </div>
-            <div class="profile-status" id="studyProfileStatus">Sign in with Google from Mode Atlas to sync your study data across devices.</div>
-            <div class="profile-actions">
-                <button class="profile-action primary" id="studyProfileSignIn" data-profile-sign-in type="button">Sign in with Google</button>
-                <button class="profile-action" id="studyProfileSignOut" data-profile-sign-out type="button" style="display:none;">Sign out</button>
-            </div>
-        </div>
-    </aside>
-</div>
-
 <div id="popup" class="popup"></div>
 
 <div class="bottom-shell ma-modifiers-only">
@@ -255,10 +244,13 @@
 </div>
 
 
-<script src="../assets/ui/mode-atlas-study-nav-hidden.js"></script>
-
 <script src="../firebase-config.js"></script>
 <script src="../cloud-sync.js"></script>
+<script src="../assets/ui/mode-atlas-profile-menu.js"></script>
+<script src="../assets/ui/mode-atlas-settings-menu.js"></script>
+<script src="../assets/ui/mode-atlas-profile-drawer-bindings.js"></script>
+<script src="../assets/ui/mode-atlas-study-nav-hidden.js"></script>
+
 <script src="../assets/ui/mode-atlas-study-cloud-bindings.js"></script>
 <script src="../assets/data/mode-atlas-kana-data.js"></script>
 <script src="../assets/trainer/mode-atlas-trainer-core.js"></script>
@@ -274,8 +266,8 @@
 
   
 <script src="../assets/trainer/mode-atlas-session-controls.js"></script>
-<script src="../assets/app/mode-atlas-stable-controls.js"></script>
 <script src="../assets/app/mode-atlas-app-runtime.js"></script>
+<script src="../assets/app/mode-atlas-stable-controls.js"></script>
 <script src="../assets/app/mode-atlas-sounds.js"></script>
 </body>
 </html>

@@ -985,11 +985,11 @@ h1 {
 
 .branch-links { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 
-.branch-link, .profile-trigger, .drawer-close { appearance: none; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text); border-radius: 999px; padding: 10px 13px; font: inherit; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, color 0.16s ease; white-space: nowrap; }
+.branch-link, .profile-trigger { appearance: none; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text); border-radius: 999px; padding: 10px 13px; font: inherit; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, color 0.16s ease; white-space: nowrap; }
 
 .profile-trigger { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.06); padding: 9px 13px 9px 10px; }
 
-.branch-link:hover, .profile-trigger:hover, .drawer-close:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.07); }
+.branch-link:hover, .profile-trigger:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.07); }
 
 .branch-link.active { background: rgba(203,163,74,0.16); border-color: rgba(203,163,74,0.32); color: #ffe2a6; }
 
@@ -1009,33 +1009,33 @@ h1 {
 
 .profile-dot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.drawer-backdrop { position: fixed; inset: 0; z-index: 80; display: none; background: rgba(0,0,0,0.52); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 
-.drawer-backdrop.open { display: block; }
 
-.profile-drawer { position: fixed; top: 18px; right: 18px; z-index: 90; width: min(390px, calc(100vw - 36px)); max-height: calc(100vh - 36px); overflow-y: auto; padding: 18px; border-radius: 28px; background: radial-gradient(circle at top right, rgba(102,168,255,0.18), transparent 34%), linear-gradient(180deg, rgba(22,25,34,0.98), rgba(9,11,16,0.98)); border: 1px solid rgba(255,255,255,0.10); box-shadow: 0 32px 90px rgba(0,0,0,0.55); transform: translateX(calc(100% + 40px)); transition: transform 0.24s ease; }
 
-.profile-drawer.open { transform: translateX(0); }
 
-.drawer-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 18px; }
 
-.drawer-title { font-size: 20px; font-weight: 900; letter-spacing: -0.03em; }
 
-.drawer-close { padding: 8px 11px; border-radius: 12px; }
 
-.drawer-user { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px; }
 
-.drawer-avatar { width: 56px; height: 56px; border-radius: 18px; object-fit: cover; display: none; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
 
-.drawer-name { font-size: 17px; font-weight: 900; margin-bottom: 4px; }
 
-.drawer-email, .drawer-status { color: var(--muted); font-size: 13px; line-height: 1.45; }
 
-.drawer-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 
-.drawer-action { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.05); color: var(--text); text-decoration: none; font-weight: 800; font-size: 13px; cursor: pointer; }
 
-.drawer-action.primary { background: rgba(102,168,255,0.16); border-color: rgba(102,168,255,0.30); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .hero-topline { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(203,163,74,0.28); background: rgba(203,163,74,0.12); color: #ffe2a6; font-size: 12px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
 
@@ -1054,7 +1054,7 @@ h1 {
         .branch-nav { align-items: flex-start; flex-direction: column; }
         .branch-links { justify-content: flex-start; }
         .profile-trigger { width: 100%; justify-content: space-between; }
-        .drawer-actions { grid-template-columns: 1fr; }
+        
         .hero, .card { padding: 18px; }
         h1 { font-size: 34px; }
         .hero-lead {

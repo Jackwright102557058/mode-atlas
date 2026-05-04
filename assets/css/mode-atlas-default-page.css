@@ -251,17 +251,7 @@ body.test-mode-active {
         box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 0 1px #67d78b;
     }
 
-.profile-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 120;
-        background: rgba(0,0,0,0.52);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.18s ease;
-    }
+
 
 .bottom-shell.ma-modifiers-only .toggle-btn.active,
 .bottom-shell.ma-modifiers-only .btn.active{background:linear-gradient(180deg, rgba(103,215,139,.24), rgba(103,215,139,.12)) !important;border-color:rgba(103,215,139,.72) !important;color:#d9ffe7 !important;box-shadow:inset 0 0 0 1px rgba(103,215,139,.22), 0 0 0 1px rgba(103,215,139,.14), 0 10px 24px rgba(103,215,139,.10) !important;}

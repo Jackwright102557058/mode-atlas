@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="./assets/app/mode-atlas-version.js"></script>
 <script src="./assets/app/mode-atlas-head-bootstrap.js"></script>
 
   <meta charset="UTF-8" />
@@ -28,9 +29,25 @@
 
   <link rel="stylesheet" href="./assets/css/mode-atlas-home-page.css">
 <link rel="stylesheet" href="./assets/css/mode-atlas-page-shared.css">
-<link rel="stylesheet" href="./assets/css/mode-atlas-qol.css" />
-<script defer src="./assets/app/mode-atlas-qol.js"></script>
+<link rel="stylesheet" href="./assets/css/mode-atlas-app-polish.css" />
+<link rel="stylesheet" href="./assets/css/mode-atlas-responsive.css" />
+<link rel="stylesheet" href="./assets/css/mode-atlas-kana-dashboard.css" />
+<link rel="stylesheet" href="./assets/css/mode-atlas-results-insights.css" />
+<link rel="stylesheet" href="./assets/css/mode-atlas-achievements.css" />
+<link rel="stylesheet" href="./assets/css/mode-atlas-theme.css" />
+<script defer src="./assets/app/mode-atlas-toast.js"></script>
+<script defer src="./assets/app/mode-atlas-theme.js"></script>
+<script defer src="./assets/app/mode-atlas-save-repair.js"></script>
+<script defer src="./assets/app/mode-atlas-page-state.js"></script>
+<script defer src="./assets/app/mode-atlas-dev-console.js"></script>
+<script defer src="./assets/app/mode-atlas-pwa.js"></script>
+<script defer src="./assets/app/mode-atlas-about.js"></script>
+<script defer src="./assets/app/mode-atlas-kana-metrics.js"></script>
+<script defer src="./assets/pages/mode-atlas-kana-dashboard.js"></script>
+<script defer src="./assets/results/mode-atlas-results-insights.js"></script>
+<script defer src="./assets/app/mode-atlas-confusable-mode.js"></script>
 <script src="./assets/app/mode-atlas-storage.js"></script>
+<script src="./assets/app/mode-atlas-presets.js"></script>
 </head>
 <body><script src="./assets/app/mode-atlas-early-loader.js"></script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
 
@@ -128,48 +145,14 @@
     <section class="about-strip" aria-label="About Mode Atlas"><div class="about-card"><div class="about-copy"><div class="section-kicker">Mode Atlas</div><h2>A calm place to build fluency.</h2><p>Mode Atlas keeps each part of study focused: recognise kana, recall kana, collect words, then return to the right tool without digging through clutter.</p></div><div class="about-points"><div class="about-point"><strong>Focused branches</strong><span>Each branch has one job, so practice feels deliberate instead of messy.</span></div><div class="about-point"><strong>Personal progress</strong><span>Your data follows the way you study, with profile controls kept out of the way.</span></div><div class="about-point"><strong>Ready to grow</strong><span>Kana and vocabulary are the base. More study paths can join later without changing the core feel.</span></div></div></div></section>
 
 <footer class="footer">
-      <div><strong>Mode Atlas</strong> · Study ecosystem · v2.11.5</div>
+      <div><strong>Mode Atlas</strong> · Study ecosystem · v<span data-ma-app-version></span></div>
       <div><a href="https://mode-atlas.app/">mode-atlas.app</a> · <a href="mailto:support@mode-atlas.com">support@mode-atlas.com</a></div>
     </footer>
   </main>
-
-  <div class="drawer-backdrop" id="drawerBackdrop"></div>
-  <aside class="profile-drawer" id="profileDrawer" role="dialog" aria-modal="true" aria-labelledby="profileDrawerTitle">
-    <div class="drawer-top">
-      <div class="drawer-title" id="profileDrawerTitle">Profile</div>
-      <button class="close-btn" id="profileCloseBtn" type="button" aria-label="Close profile">×</button>
-    </div>
-
-    <div class="profile-card">
-      <div class="profile-user">
-        <img class="profile-avatar" id="identityAvatar" alt="" />
-        <div>
-          <div class="profile-name" id="identityName">Guest</div>
-          <div class="profile-email" id="identityEmail">Not signed in</div>
-        </div>
-      </div>
-      <div class="profile-status" id="identityStatus">Sign in with Google to sync your study ecosystem across devices.</div>
-      <div class="profile-actions">
-        <button class="primary" id="identitySignInBtn" data-profile-sign-in type="button">Sign in with Google</button>
-        <button id="identitySignOutBtn" data-profile-sign-out type="button" style="display:none;">Sign out</button>
-      </div>
-    </div>
-
-    <div class="profile-card">
-      <div class="section-kicker">Your branches</div>
-      <div class="profile-actions">
-        <a href="./kana/">Open Kana Trainer</a>
-        <a href="./wordbank/">Open Word Bank</a>
-      </div>
-    </div>
-
-    <div class="profile-note">
-      Sign in once and your saved study space follows you between devices.
-    </div>
-  </aside>
-
 <script src="./firebase-config.js"></script>
 <script src="./cloud-sync.js"></script>
+<script src="./assets/ui/mode-atlas-profile-menu.js"></script>
+<script src="./assets/ui/mode-atlas-settings-menu.js"></script>
 <script src="./assets/ui/mode-atlas-profile-drawer-bindings.js"></script>
 <script src="./assets/pages/mode-atlas-home-page.js"></script>
 <script src="./assets/ui/mode-atlas-verified-preset-confusable.js"></script>
