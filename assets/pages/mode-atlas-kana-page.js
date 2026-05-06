@@ -1,50 +1,3 @@
-window.KanaCloudSync?.bindUi?.({
-    signInBtn: document.getElementById('profileSignInBtn'),
-    signOutBtn: document.getElementById('profileSignOutBtn'),
-    statusEl: document.getElementById('profileStatus'),
-    nameEl: document.getElementById('profileName'),
-    emailEl: document.getElementById('profileEmail'),
-    photoEl: document.getElementById('profileAvatar')
-});
-
-function updateTopProfileDot() {
-    const dot = document.getElementById('topProfileDot');
-    if (!dot || !window.KanaCloudSync) return;
-    const user = window.KanaCloudSync.getUser?.();
-    if (user?.photoURL) {
-        dot.innerHTML = `<img src="${user.photoURL}" alt="" />`;
-        return;
-    }
-    const label = (user?.displayName || user?.email || 'M').trim();
-    dot.textContent = (label[0] || 'M').toUpperCase();
-}
-window.KanaCloudSync?.ready?.then(() => {
-    updateTopProfileDot();
-    setTimeout(updateTopProfileDot, 300);
-    setTimeout(updateTopProfileDot, 1200);
-});
-document.getElementById('profileSignInBtn')?.addEventListener('click', () => setTimeout(updateTopProfileDot, 1200));
-document.getElementById('profileSignOutBtn')?.addEventListener('click', () => setTimeout(updateTopProfileDot, 300));
-
-const profileDrawer = document.getElementById('profileDrawer');
-const profileBackdrop = document.getElementById('profileBackdrop');
-const profileOpenBtn = document.getElementById('profileOpenBtn');
-const profileCloseBtn = document.getElementById('profileCloseBtn');
-function openProfileDrawer() {
-    profileDrawer?.classList.add('open');
-    profileBackdrop?.classList.add('open');
-    profileDrawer?.setAttribute('aria-hidden', 'false');
-}
-function closeProfileDrawer() {
-    profileDrawer?.classList.remove('open');
-    profileBackdrop?.classList.remove('open');
-    profileDrawer?.setAttribute('aria-hidden', 'true');
-}
-profileOpenBtn?.addEventListener('click', openProfileDrawer);
-profileCloseBtn?.addEventListener('click', closeProfileDrawer);
-profileBackdrop?.addEventListener('click', closeProfileDrawer);
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeProfileDrawer(); });
-
 const modeAtlasKanaCloudReady = (window.KanaCloudSync?.beforePageLoad?.() || Promise.resolve())
     .then(() => window.KanaCloudSync?.hydrateFromCloud?.())
     .catch((err) => { console.warn('Kana dashboard cloud hydration failed', err); });
@@ -52,7 +5,19 @@ const modeAtlasKanaCloudReady = (window.KanaCloudSync?.beforePageLoad?.() || Pro
 
 function loadJSON(key, fallback) {
     try {
-        return window.ModeAtlasStorage.json(key, fallback);
+        if (window.ModeAtlasStorage?.json) return window.ModeAtlasStorage.json(key, fallback);
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function loadNumber(key, fallback = 0) {
+    try {
+        if (window.ModeAtlasStorage?.number) return window.ModeAtlasStorage.number(key, fallback);
+        const value = Number(localStorage.getItem(key));
+        return Number.isFinite(value) ? value : fallback;
     } catch {
         return fallback;
     }
@@ -213,6 +178,19 @@ function renderSpotlight(modeId, summary) {
     document.getElementById(`${modeId}Strongest`).textContent = formatKanaGroup(summary.strongest, '—');
 }
 
+
+function applyKanaVisualMetrics(root = document) {
+    const scope = root && root.querySelectorAll ? root : document;
+    window.ModeAtlasUi?.applyProgressWidths?.(scope);
+    scope.querySelectorAll("[data-ring-pct]").forEach(el => {
+        el.style.setProperty("--pct", window.ModeAtlasUi?.clampPercent?.(el.dataset.ringPct) ?? 0);
+        if (el.dataset.ringColor) el.style.setProperty("--ring-color", el.dataset.ringColor);
+    });
+    scope.querySelectorAll("[data-bar-color]").forEach(el => {
+        if (el.dataset.barColor) el.style.setProperty("--bar-color", el.dataset.barColor);
+    });
+}
+
 function renderHero(summaryReading, summaryWriting) {
     document.getElementById('heroReadingHigh').textContent = summaryReading.highScore || 0;
     document.getElementById('heroWritingHigh').textContent = summaryWriting.highScore || 0;
@@ -237,7 +215,7 @@ function renderGauges(readingSummary, writingSummary) {
         return `
             <div class="gauge-card">
                 <div class="ring-wrap">
-                    <div class="ring" style="--pct:${pct}; --ring-color:${color};">
+                    <div class="ring" data-ring-pct="${pct}" data-ring-color="${color}">
                         <div class="ring-center">
                             <div>
                                 <div class="big">${pct}%</div>
@@ -261,6 +239,7 @@ function renderGauges(readingSummary, writingSummary) {
             </div>
         `;
     }).join('');
+    applyKanaVisualMetrics(document.getElementById('gaugeGrid'));
 }
 
 function renderRecords(readingSummary, writingSummary) {
@@ -297,20 +276,21 @@ function renderRecords(readingSummary, writingSummary) {
         <div class="bar-row">
             <div class="bar-top">
                 <strong>${row.label}</strong>
-                <span style="color:var(--muted);">${row.extra}</span>
+                <span class="kana-muted-text">${row.extra}</span>
             </div>
-            <div class="bar-top" style="font-size:13px;">
+            <div class="bar-top kana-bar-top">
                 <span>Reading · ${row.reading}</span>
                 <span>Writing · ${row.writing}</span>
             </div>
             <div class="bar-track">
-                <div class="bar-fill" style="--bar-color:#67d78b; width:${Math.max(4, (row.reading / maxValue) * 100)}%;"></div>
+                <div class="bar-fill" data-bar-color="#67d78b" data-ma-progress="${Math.max(4, (row.reading / maxValue) * 100)}"></div>
             </div>
             <div class="bar-track">
-                <div class="bar-fill" style="--bar-color:#66a8ff; width:${Math.max(4, (row.writing / maxValue) * 100)}%;"></div>
+                <div class="bar-fill" data-bar-color="#66a8ff" data-ma-progress="${Math.max(4, (row.writing / maxValue) * 100)}"></div>
             </div>
         </div>
     `).join('');
+    applyKanaVisualMetrics(document.getElementById('recordsBars'));
 }
 
 function renderTodaySummary(targetId, summary, mode) {
@@ -450,11 +430,11 @@ function renderLearningPulseCompare(readingSummary, writingSummary) {
                 <div class="vs-center">
                     <div class="vs-label">
                         <strong>${row.label}</strong>
-                        <span style="color:var(--muted);">Reading vs Writing progress</span>
+                        <span class="kana-muted-text">Reading vs Writing progress</span>
                     </div>
                     <div class="vs-track">
-                        <div class="vs-fill reading" style="width:${readingPct}%;"></div>
-                        <div class="vs-fill writing" style="width:${writingPct}%;"></div>
+                        <div class="vs-fill reading" data-ma-progress="${readingPct}"></div>
+                        <div class="vs-fill writing" data-ma-progress="${writingPct}"></div>
                     </div>
                 </div>
                 <div class="vs-value writing">${row.writing}</div>
@@ -467,12 +447,12 @@ function buildSummaries() {
     const readingStats = loadJSON('charStats', {});
     const readingScoreHistory = normalizeScoreHistory(loadJSON('scoreHistory', {}));
     const readingDailyHistory = loadJSON('dailyChallengeHistory', {});
-    const readingHighScore = window.ModeAtlasStorage.number('highScore', 0);
+    const readingHighScore = loadNumber('highScore', 0);
 
     const writingStats = loadJSON('reverseCharStats', {});
     const writingScoreHistory = normalizeScoreHistory(loadJSON('reverseScoreHistory', {}));
     const writingDailyHistory = loadJSON('reverseDailyChallengeHistory', {});
-    const writingHighScore = window.ModeAtlasStorage.number('reverseHighScore', 0);
+    const writingHighScore = loadNumber('reverseHighScore', 0);
 
     return {
         readingSummary: buildModeSummary({

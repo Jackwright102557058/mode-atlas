@@ -1,0 +1,13 @@
+/* Mode Atlas developer diagnostics styling. Dev UI is visually owned here. */
+.ma-hidden-dev-trigger{position:fixed;left:0;bottom:0;width:24px;height:24px;z-index:99999;opacity:.025;background:#fff;border:0;border-radius:0;cursor:default;}
+.ma-dev-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:100001;display:none;align-items:center;justify-content:center;padding:20px;}
+.ma-dev-backdrop.open{display:flex;}
+.ma-dev-modal{width:min(840px,calc(100vw - 32px));max-height:min(780px,calc(100vh - 36px));overflow:auto;border-radius:28px;background:linear-gradient(180deg,rgba(22,29,44,.98),rgba(10,14,24,.98));border:1px solid var(--ma-border,rgba(255,255,255,.14));box-shadow:0 32px 90px rgba(0,0,0,.58);padding:20px;color:var(--ma-control-text,#f8fafc);}
+.ma-dev-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+.ma-dev-head h2{margin:0;font-size:24px;letter-spacing:-.03em;}
+.ma-dev-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;}
+.ma-dev-table{display:grid;gap:8px;}
+.ma-dev-row{display:grid;grid-template-columns:minmax(130px,.42fr) 1fr;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid var(--ma-border,rgba(255,255,255,.08));font-size:13px;}
+.ma-dev-key{font-weight:900;color:var(--ma-muted,#9aa6bd);}
+.ma-dev-val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word;}
+@media(max-width:760px){.ma-dev-row{grid-template-columns:1fr;}.ma-dev-modal{padding:16px;border-radius:22px;}}

@@ -25,30 +25,18 @@
 <meta property="og:url" content="https://mode-atlas.app/results/" />
   <meta property="og:image" content="https://mode-atlas.app/assets/social-preview.svg" />
 <meta name="twitter:card" content="summary" />
-
-<link rel="stylesheet" href="../assets/css/mode-atlas-test-page.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-page-shared.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-app-polish.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-kana-dashboard.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-results-insights.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-dev-console.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-app-modals.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-profile-settings.css" />
 <link rel="stylesheet" href="../assets/css/mode-atlas-achievements.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-results-insights.css" />
 <link rel="stylesheet" href="../assets/css/mode-atlas-theme.css" />
-<script defer src="../assets/app/mode-atlas-toast.js"></script>
-<script defer src="../assets/app/mode-atlas-theme.js"></script>
-<script defer src="../assets/app/mode-atlas-save-repair.js"></script>
-<script defer src="../assets/app/mode-atlas-page-state.js"></script>
-<script defer src="../assets/app/mode-atlas-dev-console.js"></script>
-<script defer src="../assets/app/mode-atlas-pwa.js"></script>
-<script defer src="../assets/app/mode-atlas-about.js"></script>
-<script defer src="../assets/app/mode-atlas-kana-metrics.js"></script>
-<script defer src="../assets/pages/mode-atlas-kana-dashboard.js"></script>
-<script defer src="../assets/results/mode-atlas-results-insights.js"></script>
-<script defer src="../assets/app/mode-atlas-confusable-mode.js"></script>
-<script src="../assets/app/mode-atlas-storage.js"></script>
-<script src="../assets/app/mode-atlas-presets.js"></script>
+<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-test-page.css">
 </head>
-<body><script src="../assets/app/mode-atlas-early-loader.js"></script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
+<body class="results-page"><script src="../assets/app/mode-atlas-early-loader.js"></script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
 
 
 <nav class="branch-nav" aria-label="Kana Trainer navigation">
@@ -112,7 +100,7 @@
                 <div class="summary-left">
                     <div class="mega-score average" id="overallScoreCard">
                         <div class="mega-kicker" id="overallKicker">Selected result score</div>
-                        <div style="font-size:18px; font-weight:800; margin-bottom:10px; color:#f0f0f0;" id="overallSelectedName">No result selected</div>
+                        <div class="overall-selected-title" id="overallSelectedName">No result selected</div>
                         <div class="mega-value" id="overallScore">0%</div>
                         <div class="mega-sub" id="overallSub">Pick a result to see the full breakdown.</div>
 
@@ -151,7 +139,7 @@
                     </div>
                     <div class="accent"></div>
                 </div>
-                <div style="color:#cfcfcf; font-size:13px; margin-bottom:10px;">Pinned averages appear first, followed by your saved Reading and Writing test runs below.</div>
+                <div class="overall-selected-meta">Pinned averages appear first, followed by your saved Reading and Writing test runs below.</div>
                 <div class="tests-grid" id="testsGrid"></div>
             </div>
 
@@ -182,10 +170,10 @@
                         <div class="heatmap-title">Full kana result heatmap</div>
                         <div class="heatmap" id="testHeatmap"></div>
                         <div class="legend">
-                            <div class="legend-chip"><span class="legend-box" style="background: rgba(103,215,139,0.34);"></span> Correct</div>
-                            <div class="legend-chip"><span class="legend-box" style="background: rgba(255,123,123,0.28);"></span> Wrong</div>
-                            <div class="legend-chip"><span class="legend-box" style="background: rgba(255,255,255,0.08);"></span> Modifier kana off</div>
-                            <div class="legend-chip"><span class="legend-box" style="background: rgba(255,255,255,0.06);"></span> Not included</div>
+                            <div class="legend-chip"><span class="legend-box correct"></span> Correct</div>
+                            <div class="legend-chip"><span class="legend-box wrong"></span> Wrong</div>
+                            <div class="legend-chip"><span class="legend-box unanswered"></span> Modifier kana off</div>
+                            <div class="legend-chip"><span class="legend-box unused"></span> Not included</div>
                         </div>
                     </div>
 
@@ -209,33 +197,30 @@
         </div>
     </div>
 </div>
-
-
+<script src="../assets/app/mode-atlas-toast.js"></script>
+<script src="../assets/app/mode-atlas-theme.js"></script>
+<script src="../assets/app/mode-atlas-display-mode.js"></script>
+<script src="../assets/app/mode-atlas-storage.js"></script>
+<script src="../assets/app/mode-atlas-save-repair.js"></script>
+<script src="../assets/app/mode-atlas-page-state.js"></script>
+<script src="../assets/app/mode-atlas-dev-console.js"></script>
+<script src="../assets/app/mode-atlas-pwa.js"></script>
+<script src="../assets/app/mode-atlas-about.js"></script>
+<script src="../assets/app/mode-atlas-loader.js"></script>
+<script src="../assets/app/mode-atlas-visit-flows.js"></script>
+<script src="../assets/app/mode-atlas-import-export.js"></script>
+<script src="../assets/achievements/mode-atlas-achievements-ui.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../cloud-sync.js"></script>
 <script src="../assets/ui/mode-atlas-profile-menu.js"></script>
 <script src="../assets/ui/mode-atlas-settings-menu.js"></script>
 <script src="../assets/ui/mode-atlas-profile-drawer-bindings.js"></script>
-
 <script src="../assets/data/mode-atlas-kana-data.js"></script>
 <script src="../assets/results/mode-atlas-results-storage.js"></script>
 <script src="../assets/results/mode-atlas-results-engine.js"></script>
 <script src="../assets/results/mode-atlas-results-ui.js"></script>
 <script src="../assets/pages/mode-atlas-test-page.js"></script>
-
-
-
-
-
-
-
-
-
-
-
-
-<script src="../assets/ui/mode-atlas-verified-preset-confusable.js"></script>
-<script src="../assets/app/mode-atlas-app-runtime.js"></script>
+<script src="../assets/results/mode-atlas-results-insights.js"></script>
 <script src="../assets/app/mode-atlas-sounds.js"></script>
 </body>
 </html>

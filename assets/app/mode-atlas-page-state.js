@@ -73,3 +73,27 @@
   else boot();
   window.addEventListener('pageshow', () => setTimeout(boot, 50));
 })();
+
+
+(function(){
+  "use strict";
+
+  function clampPercent(value){
+    const num = Number(value);
+    if (!Number.isFinite(num)) return 0;
+    return Math.max(0, Math.min(100, num));
+  }
+
+  function applyProgressWidths(root){
+    const scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll("[data-ma-progress]").forEach(el => {
+      el.style.width = `${clampPercent(el.dataset.maProgress)}%`;
+    });
+  }
+
+  window.ModeAtlasUi = Object.assign(window.ModeAtlasUi || {}, {
+    clampPercent,
+    applyProgressWidths
+  });
+})();
+

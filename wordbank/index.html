@@ -25,28 +25,15 @@
 <meta property="og:url" content="https://mode-atlas.app/wordbank/" />
   <meta property="og:image" content="https://mode-atlas.app/assets/social-preview.svg" />
 <meta name="twitter:card" content="summary" />
-
-  <link rel="stylesheet" href="../assets/css/mode-atlas-wordbank-page.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-page-shared.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-app-polish.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-kana-dashboard.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-results-insights.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-dev-console.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-app-modals.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-profile-settings.css" />
 <link rel="stylesheet" href="../assets/css/mode-atlas-achievements.css" />
 <link rel="stylesheet" href="../assets/css/mode-atlas-theme.css" />
-<script defer src="../assets/app/mode-atlas-toast.js"></script>
-<script defer src="../assets/app/mode-atlas-theme.js"></script>
-<script defer src="../assets/app/mode-atlas-save-repair.js"></script>
-<script defer src="../assets/app/mode-atlas-page-state.js"></script>
-<script defer src="../assets/app/mode-atlas-dev-console.js"></script>
-<script defer src="../assets/app/mode-atlas-pwa.js"></script>
-<script defer src="../assets/app/mode-atlas-about.js"></script>
-<script defer src="../assets/app/mode-atlas-kana-metrics.js"></script>
-<script defer src="../assets/pages/mode-atlas-kana-dashboard.js"></script>
-<script defer src="../assets/results/mode-atlas-results-insights.js"></script>
-<script defer src="../assets/app/mode-atlas-confusable-mode.js"></script>
-<script src="../assets/app/mode-atlas-storage.js"></script>
-<script src="../assets/app/mode-atlas-presets.js"></script>
+<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-wordbank-page.css">
 </head>
 <body><script src="../assets/app/mode-atlas-early-loader.js"></script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
 <div class="wrap">
@@ -105,7 +92,7 @@
 
           <div class="status" id="statusMsg"></div>
 
-          <hr style="border: none; border-top: 1px solid rgba(148,163,184,0.12); margin: 20px 0;" />
+          <hr class="ma-divider-soft" />
 
           <h2>Tools</h2>
           <p>Export a backup, import an older bank, or clear the collection.</p>
@@ -115,7 +102,7 @@
             <label class="button-like btn-secondary" for="importFile">Import JSON</label>
             <button class="btn-danger" id="clearAllBtn" type="button">Clear All Words</button>
           </div>
-          <input id="importFile" type="file" accept="application/json" style="display:none" />
+          <input id="importFile" class="ma-file-input" type="file" accept="application/json" hidden />
 
           <div class="footer-note">
             Imported entries merge with your current bank. Matching kana keep the newest version.
@@ -164,29 +151,25 @@
       </div>
     </section>
   </div>
-
-
+<script src="../assets/app/mode-atlas-toast.js"></script>
+<script src="../assets/app/mode-atlas-theme.js"></script>
+<script src="../assets/app/mode-atlas-display-mode.js"></script>
+<script src="../assets/app/mode-atlas-storage.js"></script>
+<script src="../assets/app/mode-atlas-save-repair.js"></script>
+<script src="../assets/app/mode-atlas-page-state.js"></script>
+<script src="../assets/app/mode-atlas-dev-console.js"></script>
+<script src="../assets/app/mode-atlas-pwa.js"></script>
+<script src="../assets/app/mode-atlas-about.js"></script>
+<script src="../assets/app/mode-atlas-loader.js"></script>
+<script src="../assets/app/mode-atlas-visit-flows.js"></script>
+<script src="../assets/app/mode-atlas-import-export.js"></script>
+<script src="../assets/achievements/mode-atlas-achievements-ui.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../cloud-sync.js"></script>
 <script src="../assets/ui/mode-atlas-profile-menu.js"></script>
 <script src="../assets/ui/mode-atlas-settings-menu.js"></script>
 <script src="../assets/ui/mode-atlas-profile-drawer-bindings.js"></script>
-
 <script src="../assets/pages/mode-atlas-wordbank-page.js"></script>
-
-
-
-
-
-
-
-
-
-
-
-
-<script src="../assets/ui/mode-atlas-verified-preset-confusable.js"></script>
-<script src="../assets/app/mode-atlas-app-runtime.js"></script>
 <script src="../assets/app/mode-atlas-sounds.js"></script>
 </body>
 </html>

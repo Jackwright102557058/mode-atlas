@@ -9,7 +9,6 @@
   const LEGACY_KEYS = ['maSoundMode','modeAtlasSoundMode','soundMode'];
   const VALID_MODES = new Set(['soft','loud','off']);
   const DEFAULT_MODE = 'soft';
-  const PROFILE_MARK = 'data-ma-sound-enhanced';
 
   let ctx = null;
   let master = null;
@@ -330,10 +329,6 @@
     if(mode !== 'off') play(mode === 'loud' ? 'achievement' : 'open', { cooldown: 0, boost: mode === 'loud' ? 0.85 : 1 });
   }
 
-  function addSoundStyles(){
-    // Visual styling for menu sound controls belongs to the shared Settings menu.
-    // This sound module only updates state and behavior on existing controls.
-  }
 
   function refreshSoundControls(){
     const current = getMode();
@@ -349,26 +344,9 @@
     });
   }
 
-  function addProfileSoundControls(){
-    // Profile and Settings controls are rendered by the shared menu files.
-    // The sound system only binds state and behaviour to existing controls.
-    refreshSoundControls();
-  }
 
 
-  function addDevSoundTools(){
-    document.querySelectorAll('#maDevPanel .ma-dev-card,#maDevMenu .ma-dev-modal,.ma-dev-panel .ma-dev-card').forEach(panel => {
-      if(!panel || panel.querySelector('[data-ma-sound-dev-tools]')) return;
-      const row = document.createElement('div');
-      row.className = 'ma-dev-row';
-      row.setAttribute('data-ma-sound-dev-tools', '1');
-      row.innerHTML = '<div class="ma-dev-label">Sound</div><div class="ma-dev-actions"><button class="ma-dev-btn" type="button" data-ma-dev-sound="soft">Sound on</button><button class="ma-dev-btn" type="button" data-ma-dev-sound="loud">Loud</button><button class="ma-dev-btn" type="button" data-ma-dev-sound="off">Sound off</button><button class="ma-dev-btn" type="button" data-ma-dev-test-sound>Test sound</button></div>';
-      const consoleRow = [...panel.querySelectorAll('.ma-dev-row')].find(r => /Console/i.test(r.textContent || ''));
-      if(consoleRow) panel.insertBefore(row, consoleRow);
-      else panel.appendChild(row);
-    });
-    refreshSoundControls();
-  }
+
 
   function testSound(){
     if(getMode() === 'off') setMode('soft');
@@ -470,8 +448,6 @@
     });
 
     const childObserver = new MutationObserver(mutations => {
-      addProfileSoundControls();
-      addDevSoundTools();
       refreshSoundControls();
       for(const m of mutations){
         for(const node of m.addedNodes || []){
@@ -609,7 +585,6 @@
   }
 
   function init(){
-    addSoundStyles();
     const existing = window.ModeAtlasUI || {};
     window.ModeAtlasUI = Object.assign(existing, {
       playSound: play,
@@ -628,8 +603,6 @@
       version: VERSION
     };
 
-    addProfileSoundControls();
-    addDevSoundTools();
     refreshSoundControls();
     bindEvents();
     wrapKnownFunctions();
@@ -639,13 +612,5 @@
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  setTimeout(init, 250);
-  setTimeout(init, 900);
-  setTimeout(init, 1900);
-  setInterval(() => {
-    addProfileSoundControls();
-    addDevSoundTools();
-    refreshSoundControls();
-    wrapKnownFunctions();
-  }, 1600);
+  window.addEventListener('modeAtlasSettingsMenuReady', refreshSoundControls);
 })();

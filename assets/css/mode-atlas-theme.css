@@ -158,7 +158,6 @@ html[data-ma-theme="light"] .bottom-shell,
 html[data-ma-theme="light"] .drawer-content,
 html[data-ma-theme="light"] .modifier-panel,
 html[data-ma-theme="light"] .options-stack>div,
-html[data-ma-theme="light"] .ma-preset-menu,
 html[data-ma-theme="light"] .ma-kana-pro-card,
 html[data-ma-theme="light"] .ma-kana-stat,
 html[data-ma-theme="light"] .ma-kana-plan>div,
@@ -324,7 +323,6 @@ html[data-ma-theme="light"] .button,
 html[data-ma-theme="light"] button,
 html[data-ma-theme="light"] .toggle-btn,
 html[data-ma-theme="light"] .tab-button,
-html[data-ma-theme="light"] .ma-preset-btn,
 html[data-ma-theme="light"] .ma-menu-action,
 html[data-ma-theme="light"] .ma-settings-choice,
 html[data-ma-theme="light"] .ma-ui-btn,
@@ -346,7 +344,6 @@ html[data-ma-theme="light"] .study-nav-btn:hover,
 html[data-ma-theme="light"] .profile-trigger:hover,
 html[data-ma-theme="light"] button:hover,
 html[data-ma-theme="light"] .toggle-btn:hover,
-html[data-ma-theme="light"] .ma-preset-btn:hover,
 html[data-ma-theme="light"] .ma-menu-action:hover,
 html[data-ma-theme="light"] .ma-settings-choice:hover{
   background:var(--ma-control-hover)!important;
@@ -359,8 +356,6 @@ html[data-ma-theme="light"] .btn.active,
 html[data-ma-theme="light"] .toggle-btn.active,
 html[data-ma-theme="light"] .toggle-btn[aria-pressed="true"],
 html[data-ma-theme="light"] .tab-button.active,
-html[data-ma-theme="light"] .ma-preset-btn.active,
-html[data-ma-theme="light"] .ma-preset-btn[aria-pressed="true"],
 html[data-ma-theme="light"] .ma-display-option.active,
 html[data-ma-theme="light"] .ma-sound-toggle.active,
 html[data-ma-theme="light"] .ma-theme-choice-btn.active,
@@ -371,8 +366,6 @@ html[data-ma-theme="light"] [data-ma-theme-choice].active{
   -webkit-text-fill-color:#102e57!important;
   box-shadow:0 0 0 4px var(--ma-focus-ring),0 16px 34px rgba(38,95,165,.14)!important;
 }
-html[data-ma-theme="light"] body.ma-reading-page .ma-preset-btn.active,
-html[data-ma-theme="light"] body.ma-reading-page .ma-preset-btn[aria-pressed="true"],
 html[data-ma-theme="light"] body.ma-reading-page .bottom-shell .toggle-btn.active,
 html[data-ma-theme="light"] body.ma-reading-page .bottom-shell .toggle-btn[aria-pressed="true"]{
   background:linear-gradient(180deg,#cce9d9,#9fd4bc)!important;
@@ -381,8 +374,6 @@ html[data-ma-theme="light"] body.ma-reading-page .bottom-shell .toggle-btn[aria-
   -webkit-text-fill-color:#083421!important;
   box-shadow:0 0 0 4px rgba(17,112,77,.16),0 16px 34px rgba(17,112,77,.13)!important;
 }
-html[data-ma-theme="light"] body.ma-writing-page .ma-preset-btn.active,
-html[data-ma-theme="light"] body.ma-writing-page .ma-preset-btn[aria-pressed="true"],
 html[data-ma-theme="light"] body.ma-writing-page .bottom-shell .toggle-btn.active,
 html[data-ma-theme="light"] body.ma-writing-page .bottom-shell .toggle-btn[aria-pressed="true"]{
   background:linear-gradient(180deg,#cfe0f4,#9fbee2)!important;

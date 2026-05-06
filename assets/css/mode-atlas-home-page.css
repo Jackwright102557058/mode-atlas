@@ -708,34 +708,34 @@ h2 {
 @media(max-width:860px){.about-card,.about-points{grid-template-columns:1fr}.about-strip{padding-bottom:28px}}
 
 @media (min-width: 761px) {
-  .topbar { margin-top: 10px !important; }
+  .topbar { margin-top: 10px ; }
   .hero {
-    min-height: auto !important;
-    padding: clamp(28px, 4.2vh, 42px) 0 28px !important;
-    display: grid !important;
-    place-items: start center !important;
+    min-height: auto ;
+    padding: clamp(28px, 4.2vh, 42px) 0 28px ;
+    display: grid ;
+    place-items: start center ;
   }
   .atlas-card {
-    padding: clamp(30px, 3.8vw, 52px) !important;
+    padding: clamp(30px, 3.8vw, 52px) ;
   }
   .hero-grid {
-    gap: clamp(24px, 4vw, 52px) !important;
-    align-items: center !important;
+    gap: clamp(24px, 4vw, 52px) ;
+    align-items: center ;
   }
   .eyebrow {
-    margin-bottom: clamp(14px, 1.9vw, 18px) !important;
-    padding: 8px 13px !important;
+    margin-bottom: clamp(14px, 1.9vw, 18px) ;
+    padding: 8px 13px ;
   }
   h1 {
-    font-size: clamp(4.2rem, 7.6vw, 7.7rem) !important;
-    line-height: 0.86 !important;
+    font-size: clamp(4.2rem, 7.6vw, 7.7rem) ;
+    line-height: 0.86 ;
   }
   .hero-line {
-    margin-top: clamp(16px, 2vw, 22px) !important;
-    line-height: 1.58 !important;
+    margin-top: clamp(16px, 2vw, 22px) ;
+    line-height: 1.58 ;
   }
   .hero-actions {
-    margin-top: clamp(20px, 2.6vw, 28px) !important;
+    margin-top: clamp(20px, 2.6vw, 28px) ;
   }
   .constellation {
     transform: scale(0.92);
@@ -744,79 +744,79 @@ h2 {
 }
 
 @media (min-width: 1181px) and (max-height: 900px) {
-  .hero { padding-top: 24px !important; }
-  .atlas-card { padding: clamp(28px, 3.2vw, 44px) !important; }
-  h1 { font-size: clamp(4rem, 6.7vw, 7rem) !important; }
-  .hero-line { font-size: clamp(1rem, 1.45vw, 1.18rem) !important; }
+  .hero { padding-top: 24px ; }
+  .atlas-card { padding: clamp(28px, 3.2vw, 44px) ; }
+  h1 { font-size: clamp(4rem, 6.7vw, 7rem) ; }
+  .hero-line { font-size: clamp(1rem, 1.45vw, 1.18rem) ; }
   .constellation { transform: scale(0.86); }
 }
 
 @media (max-width: 760px) {
   body {
-    background-color: #05060b !important;
+    background-color: #05060b ;
   }
   .topbar {
-    position: relative !important;
-    top: 0 !important;
-    width: calc(100% - 20px) !important;
-    margin: 10px auto 8px !important;
-    padding: 10px !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 10px !important;
-    min-height: 66px !important;
-    border-radius: 26px !important;
+    position: relative ;
+    top: 0 ;
+    width: calc(100% - 20px) ;
+    margin: 10px auto 8px ;
+    padding: 10px ;
+    display: flex ;
+    flex-direction: row ;
+    align-items: center ;
+    justify-content: space-between ;
+    gap: 10px ;
+    min-height: 66px ;
+    border-radius: 26px ;
   }
-  .brand { min-width: 0 !important; gap: 10px !important; }
-  .brand-mark { width: 48px !important; height: 48px !important; border-radius: 16px !important; flex: 0 0 auto !important; }
-  .brand-name { font-size: 1.18rem !important; white-space: nowrap !important; }
-  .brand-sub { display: none !important; }
+  .brand { min-width: 0 ; gap: 10px ; }
+  .brand-mark { width: 48px ; height: 48px ; border-radius: 16px ; flex: 0 0 auto ; }
+  .brand-name { font-size: 1.18rem ; white-space: nowrap ; }
+  .brand-sub { display: none ; }
   .nav {
-    display: flex !important;
-    width: auto !important;
-    grid-column: auto !important;
-    overflow: visible !important;
-    gap: 0 !important;
-    flex: 0 0 auto !important;
+    display: flex ;
+    width: auto ;
+    grid-column: auto ;
+    overflow: visible ;
+    gap: 0 ;
+    flex: 0 0 auto ;
   }
-  .nav-link { display: none !important; }
+  .nav-link { display: none ; }
   .profile-trigger {
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 8px !important;
-    border-radius: 999px !important;
+    width: auto ;
+    min-width: 0 ;
+    padding: 8px ;
+    border-radius: 999px ;
   }
-  .profile-trigger > span:not(.profile-dot) { display: none !important; }
-  .profile-dot { width: 38px !important; height: 38px !important; }
+  .profile-trigger > span:not(.profile-dot) { display: none ; }
+  .profile-dot { width: 38px ; height: 38px ; }
   .hero {
-    min-height: auto !important;
-    display: block !important;
-    padding: 8px 0 22px !important;
+    min-height: auto ;
+    display: block ;
+    padding: 8px 0 22px ;
   }
   .atlas-card {
-    padding: 22px !important;
-    border-radius: 30px !important;
+    padding: 22px ;
+    border-radius: 30px ;
   }
-  .hero-grid { display: block !important; }
-  .eyebrow { margin-bottom: 18px !important; }
+  .hero-grid { display: block ; }
+  .eyebrow { margin-bottom: 18px ; }
   h1, .hero-title, .main-title {
-    font-size: clamp(3.35rem, 16vw, 5.1rem) !important;
-    line-height: 0.92 !important;
-    letter-spacing: -0.07em !important;
+    font-size: clamp(3.35rem, 16vw, 5.1rem) ;
+    line-height: 0.92 ;
+    letter-spacing: -0.07em ;
   }
   .hero-line {
-    margin-top: 20px !important;
-    font-size: clamp(1.05rem, 5vw, 1.32rem) !important;
-    line-height: 1.48 !important;
+    margin-top: 20px ;
+    font-size: clamp(1.05rem, 5vw, 1.32rem) ;
+    line-height: 1.48 ;
   }
-  .hero-actions { margin-top: 24px !important; }
-  .hero-actions .button { min-height: 58px !important; }
+  .hero-actions { margin-top: 24px ; }
+  .hero-actions .button { min-height: 58px ; }
 }
 
 @media (min-width: 761px) and (max-width: 1180px) {
-  .hero { padding-top: 18px !important; }
-  .atlas-card { padding: clamp(28px, 4vw, 42px) !important; }
-  h1, .hero-title, .main-title { font-size: clamp(4.2rem, 8vw, 6.6rem) !important; }
+  .hero { padding-top: 18px ; }
+  .atlas-card { padding: clamp(28px, 4vw, 42px) ; }
+  h1, .hero-title, .main-title { font-size: clamp(4.2rem, 8vw, 6.6rem) ; }
 }

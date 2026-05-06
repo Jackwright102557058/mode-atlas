@@ -11,20 +11,6 @@
   }
 
   function init(){
-window.KanaCloudSync?.bindUi?.({
-    signInBtn: document.getElementById('profileSignInBtn'),
-    signOutBtn: document.getElementById('profileSignOutBtn'),
-    statusEl: document.getElementById('profileStatus'),
-    nameEl: document.getElementById('profileName'),
-    emailEl: document.getElementById('profileEmail'),
-    photoEl: document.getElementById('profileAvatar')
-});
-const profileDot = document.getElementById('profileDot');
-window.KanaCloudSync?.ready?.then(() => {
-    const user = window.KanaCloudSync?.getUser?.();
-    if (user?.photoURL && profileDot) profileDot.innerHTML = `<img src="${user.photoURL}" alt="" />`;
-});
-
 const ResultsUI = window.ModeAtlasResultsUI || {};
 const REGULAR_ROW_GROUPS = ResultsUI.REGULAR_ROW_GROUPS || [];
 const SPECIAL_ROW_GROUPS = ResultsUI.SPECIAL_ROW_GROUPS || [];
@@ -237,53 +223,53 @@ function renderDebugPanel() {
     const keyInfo = getStorageKeyDebugInfo();
 
     DEBUG_PANEL.innerHTML = `
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">
-            <div style="font-size:13px;font-weight:800;letter-spacing:0.04em;">Storage Debug</div>
-            <button type="button" id="debugCloseBtn" style="border:1px solid rgba(255,255,255,0.14);background:#1f1f1f;color:#f3f3f3;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px;">×</button>
+        <div class="storage-debug-head">
+            <div class="storage-debug-title">Storage Debug</div>
+            <button type="button" id="debugCloseBtn" class="storage-debug-close">×</button>
         </div>
 
-        <div style="display:grid;gap:8px;margin-bottom:12px;">
+        <div class="storage-debug-grid storage-debug-section">
             <div><strong>Reading results:</strong> ${readingResults.length}</div>
             <div><strong>Writing results:</strong> ${writingResults.length}</div>
             <div><strong>Visible tests:</strong> ${testsOnly.length}</div>
             <div><strong>Selected:</strong> ${selectedResultId || "—"}</div>
         </div>
 
-        <div style="margin-bottom:12px;">
-            <div style="font-weight:800;margin-bottom:6px;">Storage keys</div>
-            <div style="display:grid;gap:6px;">
+        <div class="storage-debug-section">
+            <div class="storage-debug-card-title">Storage keys</div>
+            <div class="storage-debug-key-grid">
                 ${keyInfo.map(item => `
-                    <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-                        <div style="font-weight:700;">${item.key}</div>
-                        <div style="color:#bfbfbf;">Present: ${item.present ? "yes" : "no"} · Items: ${item.count} · Raw length: ${item.rawLength}</div>
-                        ${item.parseError ? `<div style="color:#ff9b9b;">Parse error: ${item.parseError}</div>` : ""}
+                    <div class="storage-debug-card-small">
+                        <div class="storage-debug-key-title">${item.key}</div>
+                        <div class="storage-debug-muted">Present: ${item.present ? "yes" : "no"} · Items: ${item.count} · Raw length: ${item.rawLength}</div>
+                        ${item.parseError ? `<div class="storage-debug-danger">Parse error: ${item.parseError}</div>` : ""}
                     </div>
                 `).join("")}
             </div>
         </div>
 
         <div>
-            <div style="font-weight:800;margin-bottom:6px;">Delete saved tests</div>
-            <div style="color:#bfbfbf;margin-bottom:8px;">Only individual saved tests can be deleted here. Overall averages stay protected.</div>
-            <div style="display:grid;gap:8px;">
+            <div class="storage-debug-card-title">Delete saved tests</div>
+            <div class="storage-debug-subtitle">Only individual saved tests can be deleted here. Overall averages stay protected.</div>
+            <div class="storage-debug-test-grid">
                 ${testsOnly.length ? testsOnly.map(item => `
-                    <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
-                            <div style="min-width:0;">
-                                <div style="font-weight:700;">${item.title}</div>
-                                <div style="color:#bfbfbf;font-size:11px;">${item.mode === "reading" ? "Reading" : "Writing"} · ${item.date} · ${item.startedAt}</div>
-                                <div style="color:#8f8f8f;font-size:10px;word-break:break-all;margin-top:3px;">${item.id}</div>
+                    <div class="storage-debug-card-small">
+                        <div class="storage-debug-test-row">
+                            <div class="storage-debug-test-main">
+                                <div class="storage-debug-test-title">${item.title}</div>
+                                <div class="storage-debug-test-meta">${item.mode === "reading" ? "Reading" : "Writing"} · ${item.date} · ${item.startedAt}</div>
+                                <div class="storage-debug-test-id">${item.id}</div>
                             </div>
                             <button
                                 type="button"
                                 class="debug-delete-btn"
                                 data-test-id="${item.id}"
                                 data-test-mode="${item.mode}"
-                                style="border:1px solid rgba(255,123,123,0.34);background:rgba(120,26,26,0.35);color:#ffd1d1;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px;white-space:nowrap;"
+                                class="storage-debug-delete-btn"
                             >Delete</button>
                         </div>
                     </div>
-                `).join("") : `<div style="padding:8px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#bfbfbf;">No individual tests to delete.</div>`}
+                `).join("") : `<div class="storage-debug-empty">No individual tests to delete.</div>`}
             </div>
         </div>
     `;
@@ -544,7 +530,7 @@ function openKanaModal(result, kana) {
         KANA_MODAL_STATS.innerHTML = `
             <div class="modal-stat">
                 <div class="label">Result</div>
-                <div class="value" style="color:${wasCorrect ? '#bdf3cf' : '#ffb3b3'};">${wasCorrect ? 'Correct' : 'Wrong'}</div>
+                <div class="value ${wasCorrect ? 'result-answer-correct' : 'result-answer-wrong'}">${wasCorrect ? 'Correct' : 'Wrong'}</div>
             </div>
             <div class="modal-stat">
                 <div class="label">Time</div>
@@ -558,6 +544,15 @@ function openKanaModal(result, kana) {
 
 function closeKanaModal() {
     KANA_MODAL_BACKDROP.classList.remove("open");
+}
+
+
+function applyHeatmapCellColours(root = TEST_HEATMAP) {
+    if (!root) return;
+    root.querySelectorAll("[data-heat-color]").forEach(cell => {
+        const colour = cell.dataset.heatColor || "";
+        if (colour) cell.style.background = colour;
+    });
 }
 
 function renderHeatmap(result) {
@@ -588,7 +583,7 @@ function renderHeatmap(result) {
             ? `<span class="cell-badge ${marker}">${marker === 'fastest' ? 'Fastest' : 'Slowest'}</span>`
             : '';
         return `
-            <button class="cell ${selectedKana === char ? "active" : ""}" data-kana="${char}" type="button" style="background:${getHeatColor(result, record)};">
+            <button class="cell ${selectedKana === char ? "active" : ""}" data-kana="${char}" data-heat-color="${getHeatColor(result, record)}" type="button">
                 ${badge}
                 <div class="cell-char">${char}</div>
                 <div class="cell-time">${formatDuration(record.avgMs)}</div>
@@ -680,7 +675,7 @@ function renderAll() {
         DETAIL_METRICS.innerHTML = "";
         const hideBtn = document.getElementById("hideUnusedBtn");
         if (hideBtn) { hideBtn.classList.remove("active"); hideBtn.textContent = "Hide unused kana"; }
-        TEST_HEATMAP.innerHTML = `<div class="empty" style="grid-column:1/-1;">No kana data yet.</div>`;
+        TEST_HEATMAP.innerHTML = `<div class="empty test-heatmap-empty">No kana data yet.</div>`;
         return;
     }
     renderSnapshot(result);

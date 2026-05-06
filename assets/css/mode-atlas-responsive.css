@@ -638,3 +638,21 @@ body {
     min-width: 32px !important;
   }
 }
+
+
+/* Phone nav account/settings pair spacing. Brand text must leave room for both buttons. */
+@media (max-width: 760px), (max-width: 900px) and (orientation: portrait) {
+  .brand,
+  .branch-brand,
+  .study-brand {
+    max-width: calc(100vw - 186px) !important;
+  }
+}
+@media (max-width: 430px) {
+  .brand,
+  .branch-brand,
+  .study-brand {
+    max-width: calc(100vw - 150px) !important;
+  }
+}
+

@@ -1,44 +1,20 @@
 let cloudHydration = Promise.resolve(false);
 try {
-  if (window.KanaCloudSync) {
-    window.KanaCloudSync.bindUi({
-      signInBtn: document.getElementById('profileSignInBtn'),
-      signOutBtn: document.getElementById('profileSignOutBtn'),
-      statusEl: document.getElementById('profileStatus'),
-      nameEl: document.getElementById('profileName'),
-      emailEl: document.getElementById('profileEmail'),
-      photoEl: document.getElementById('profileAvatar')
-    });
-    cloudHydration = window.KanaCloudSync.beforePageLoad().then(() => true).catch((error) => {
+  if (window.KanaCloudSync?.beforePageLoad) {
+    cloudHydration = window.KanaCloudSync.beforePageLoad().then(() => {
+      window.ModeAtlasProfile?.refresh?.();
+      return true;
+    }).catch((error) => {
       console.warn('Word Bank cloud hydration failed.', error);
       return false;
     });
-    document.getElementById('profileSignInBtn')?.addEventListener('click', () => {
-      setTimeout(() => {
-        wordBank = loadWordBank();
-        renderEntries();
-        updateTopProfileDot();
-      }, 1200);
-    });
-    document.getElementById('profileSignOutBtn')?.addEventListener('click', () => {
-      setTimeout(updateTopProfileDot, 400);
-    });
   }
 } catch (error) {
-  console.warn('Cloud save controls could not load on Word Bank.', error);
-  const status = document.getElementById('profileStatus');
-  if (status) status.textContent = 'Cloud sign-in could not load on this page.';
+  console.warn('Cloud save could not load on Word Bank.', error);
 }
 
-function updateTopProfileDot() {
-  const dot = document.getElementById('topProfileDot');
-  const user = window.KanaCloudSync?.getUser?.();
-  if (!dot) return;
-  if (user?.photoURL) {
-    dot.innerHTML = `<img src="${user.photoURL}" alt="" />`;
-  } else {
-    dot.textContent = user?.displayName?.trim()?.[0]?.toUpperCase() || 'M';
-  }
+function refreshProfileShell() {
+  window.ModeAtlasProfile?.refresh?.();
 }
 
     const STORAGE_KEY = 'kanaWordBank';
@@ -590,13 +566,13 @@ function updateTopProfileDot() {
     cloudHydration.then(() => {
       wordBank = loadWordBank();
       renderEntries();
-      updateTopProfileDot();
+      refreshProfileShell();
     });
-    window.KanaCloudSync?.ready?.then(updateTopProfileDot);
+    window.KanaCloudSync?.ready?.then(refreshProfileShell);
     window.addEventListener('focus', () => {
       wordBank = loadWordBank();
       renderEntries();
-      updateTopProfileDot();
+      refreshProfileShell();
     });
     elements.kanaInput.focus();
   

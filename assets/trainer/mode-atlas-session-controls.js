@@ -16,17 +16,24 @@
 
   function ensureButtons(){
     const actions = document.getElementById('sessionActions');
-    if (!actions || actions.dataset.maControls) return;
-    actions.dataset.maControls = '1';
-    const skip = Object.assign(document.createElement('button'), { type:'button', className:'btn btn-secondary', id:'skipKanaBtn', textContent:'I don’t know' });
-    const pause = Object.assign(document.createElement('button'), { type:'button', className:'btn btn-secondary', id:'pauseSessionBtn', textContent:'Pause' });
-    actions.insertBefore(pause, actions.firstChild);
-    actions.insertBefore(skip, actions.firstChild);
-    pause.addEventListener('click', togglePause);
-    skip.addEventListener('click', skipCurrentKana);
+    if (!actions) return;
+
+    const skip = actions.querySelector('#skipKanaBtn');
+    const pause = actions.querySelector('#pauseSessionBtn');
+
+    if (pause && !pause.dataset.maSessionControlBound) {
+      pause.dataset.maSessionControlBound = '1';
+      pause.addEventListener('click', togglePause);
+    }
+
+    if (skip && !skip.dataset.maSessionControlBound) {
+      skip.dataset.maSessionControlBound = '1';
+      skip.addEventListener('click', skipCurrentKana);
+    }
+
     const card = document.querySelector('.main-card,.practice-card');
     if (card && !card.querySelector('.ma-pause-overlay')) {
-      card.style.position = card.style.position || 'relative';
+      card.classList.add('ma-pause-host');
       const overlay = Object.assign(document.createElement('div'), { className:'ma-pause-overlay', textContent:'Paused' });
       card.appendChild(overlay);
     }
@@ -96,24 +103,22 @@
     else flashResult(false, () => nextCharacter());
   }
   function skipCurrentKana(){
-    try { if (!sessionStarted || paused || locked || gameOverEl.style.display === 'block') return; markSkipped(); }
+    try { if (!sessionStarted || paused || locked || isElementVisible(gameOverEl)) return; markSkipped(); }
     catch (e) { console.warn('Skip failed', e); }
   }
-  function wrapLifecycle(name){
-    const oldFn = typeof window[name] === 'function' ? window[name] : (typeof globalThis[name] === 'function' ? globalThis[name] : null);
-    try { if (typeof eval(name) === 'function') return eval(name); } catch {}
-    return oldFn;
+  function resetPauseUi(){
+    paused = false;
+    pauseRemaining = 0;
+    document.body.classList.remove('ma-session-paused');
+    const btn = document.getElementById('pauseSessionBtn');
+    if (btn) btn.textContent = 'Pause';
   }
-  const oldStart = wrapLifecycle('startSession');
-  if (oldStart && !oldStart.__maSessionControlsWrapped) {
-    startSession = function(){ paused = false; document.body.classList.remove('ma-session-paused'); const btn = document.getElementById('pauseSessionBtn'); if (btn) btn.textContent = 'Pause'; return oldStart.apply(this, arguments); };
-    startSession.__maSessionControlsWrapped = true;
-  }
-  const oldEnd = wrapLifecycle('endSession');
-  if (oldEnd && !oldEnd.__maSessionControlsWrapped) {
-    endSession = function(){ paused = false; document.body.classList.remove('ma-session-paused'); const btn = document.getElementById('pauseSessionBtn'); if (btn) btn.textContent = 'Pause'; return oldEnd.apply(this, arguments); };
-    endSession.__maSessionControlsWrapped = true;
-  }
+
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('#startBtn') || event.target.closest('#retryBtn') || event.target.closest('#endSessionBtn')) {
+      resetPauseUi();
+    }
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureButtons); else ensureButtons();
   setTimeout(ensureButtons, 600);
 })();

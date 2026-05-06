@@ -23,7 +23,7 @@
               <button class="ma-menu-action ma-settings-choice" type="button" data-ma-unified-import>Import save</button>
               <button class="ma-menu-action ma-settings-choice ma-danger" type="button" data-ma-unified-reset>Reset data</button>
             </div>
-            <input type="file" accept=".json,application/json" data-ma-unified-file style="display:none" />
+            <input type="file" accept=".json,application/json" data-ma-unified-file class="ma-file-input" hidden />
           </section>
 
           <section class="ma-settings-card ma-settings-panel ma-display-panel" aria-label="Display mode">

@@ -1,4 +1,4 @@
-(function ModeAtlasReverseInputControlFix(){
+(function ModeAtlasInputControls(){
   const IDS = ['buttonsModeBtn','keyboardModeBtn','choice4Btn','choice6Btn','choice8Btn'];
   function byId(id){ return document.getElementById(id); }
   function setActive(el, active){
@@ -26,16 +26,16 @@
       if (buttons) buttons.disabled = !!sessionStarted;
       if (kb) kb.disabled = !!sessionStarted;
       if (keyboard) {
-        if (c4) { c4.textContent = 'Romaji Keyboard'; c4.style.display = ''; c4.disabled = !!sessionStarted; }
-        if (c6) { c6.textContent = 'Kana Keyboard'; c6.style.display = ''; c6.disabled = !!sessionStarted; }
-        if (c8) { c8.style.display = 'none'; c8.disabled = true; }
+        if (c4) { c4.textContent = 'Romaji Keyboard'; setElementVisible(c4, true); c4.disabled = !!sessionStarted; }
+        if (c6) { c6.textContent = 'Kana Keyboard'; setElementVisible(c6, true); c6.disabled = !!sessionStarted; }
+        if (c8) { setElementHidden(c8, true); c8.disabled = true; }
         setActive(c4, settings.keyboardInputType === 'romaji');
         setActive(c6, settings.keyboardInputType !== 'romaji');
         setActive(c8, false);
       } else {
-        if (c4) { c4.textContent = '4 Choices'; c4.style.display = ''; c4.disabled = !!sessionStarted || forced; }
-        if (c6) { c6.textContent = '6 Choices'; c6.style.display = ''; c6.disabled = !!sessionStarted || forced; }
-        if (c8) { c8.textContent = '8 Choices'; c8.style.display = ''; c8.disabled = !!sessionStarted || forced; }
+        if (c4) { c4.textContent = '4 Choices'; setElementVisible(c4, true); c4.disabled = !!sessionStarted || forced; }
+        if (c6) { c6.textContent = '6 Choices'; setElementVisible(c6, true); c6.disabled = !!sessionStarted || forced; }
+        if (c8) { c8.textContent = '8 Choices'; setElementVisible(c8, true); c8.disabled = !!sessionStarted || forced; }
         setActive(c4, settings.choiceCount === 4 && !forced);
         setActive(c6, settings.choiceCount === 6 || forced);
         setActive(c8, settings.choiceCount === 8 && !forced);
@@ -45,7 +45,7 @@
   function handleClick(event){
     const btn = event.target && event.target.closest && event.target.closest('#' + IDS.join(',#'));
     if (!btn) return;
-    // Keep these controls independent from the drawer click-repair layers.
+    // Keep these controls independent from the other trainer controls.
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
@@ -70,7 +70,7 @@
       else sync();
       setTimeout(sync, 0);
       setTimeout(sync, 80);
-    } catch (err) { console.warn('ModeAtlas input control click failed', err); }
+    } catch (err) { console.warn('Mode Atlas input control click failed', err); }
   }
   function install(){
     if (document.documentElement.dataset.maReverseInputControlFix) return;
@@ -79,7 +79,7 @@
     document.addEventListener('touchend', function(event){
       const btn = event.target && event.target.closest && event.target.closest('#' + IDS.join(',#'));
       if (!btn) return;
-      // Let the following click event do the actual work; this only stops drawer auto-close layers.
+      // Let the following click event do the actual work; this only stops menu close handling.
       event.stopPropagation();
     }, true);
     const oldApply = typeof applyPanelStates === 'function' ? applyPanelStates : null;

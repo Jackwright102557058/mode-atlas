@@ -1119,7 +1119,46 @@ h1 {
     }
 
 @media (max-width: 760px) {
-  .branch-links .profile-trigger { order: 99 !important; }
+  .branch-links .profile-trigger { order: 99 ; }
   .branch-links { -webkit-overflow-scrolling: touch; }
-  .branch-links::-webkit-scrollbar { display: none !important; }
+  .branch-links::-webkit-scrollbar { display: none ; }
+}
+
+
+.kana-footer-note-left {
+  text-align: left;
+  margin-top: 6px;
+}
+
+.launch-card.results-launch-card {
+  padding: 14px;
+  font-size: 14px;
+  background: linear-gradient(180deg, rgba(203,163,74,0.18), rgba(20,20,20,0.96));
+  border-color: rgba(203,163,74,0.35);
+}
+
+.kana-inline-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kana-strong-label {
+  font-weight: 700;
+}
+
+.kana-soft-label {
+  opacity: 0.8;
+}
+
+.card-title.kana-card-title-offset {
+  margin-top: 10px;
+}
+
+.kana-muted-text {
+  color: var(--muted);
+}
+
+.kana-bar-top {
+  font-size: 13px;
 }

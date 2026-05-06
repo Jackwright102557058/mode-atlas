@@ -1,41 +1,33 @@
-(function () {
-    const storageKey = 'kanaTrainerNavHidden';
-    const body = document.body;
-    const profileBtn = document.getElementById('studyProfileBtn');
-    const overlay = document.getElementById('studyProfileOverlay');
-    const closeBtn = document.getElementById('studyProfileClose');
-    const hideBtn = document.getElementById('studyNavHideBtn');
-    const showBtn = document.getElementById('studyNavShowBtn');
-    const store = window.ModeAtlasStorage;
+(function ModeAtlasStudyNavHidden(){
+  'use strict';
 
-    function setNavHidden(hidden) {
-        body.classList.toggle('study-nav-hidden', hidden);
-        store?.set(storageKey, hidden ? '1' : '0');
+  const storageKey = 'kanaTrainerNavHidden';
+
+  function readHidden(){
+    try {
+      const store = window.ModeAtlasStorage;
+      if (store?.get) return store.get(storageKey, '0') === '1';
+      return localStorage.getItem(storageKey) === '1';
+    } catch {
+      return false;
     }
+  }
 
-    function openProfile(event) {
-        if (window.ModeAtlasProfile && typeof window.ModeAtlasProfile.open === 'function') {
-            event?.preventDefault?.();
-            window.ModeAtlasProfile.open();
-            return;
-        }
-        if (!overlay) return;
-        overlay.classList.add('open');
-        overlay.setAttribute('aria-hidden', 'false');
-    }
+  function writeHidden(hidden){
+    try {
+      const store = window.ModeAtlasStorage;
+      if (store?.set) store.set(storageKey, hidden ? '1' : '0');
+      else localStorage.setItem(storageKey, hidden ? '1' : '0');
+    } catch {}
+  }
 
-    function closeProfile() {
-        if (!overlay) return;
-        overlay.classList.remove('open');
-        overlay.setAttribute('aria-hidden', 'true');
-    }
+  function setNavHidden(hidden) {
+    document.body.classList.toggle('study-nav-hidden', !!hidden);
+    writeHidden(!!hidden);
+  }
 
-    if (store?.get(storageKey, '0') === '1') body.classList.add('study-nav-hidden');
+  if (readHidden()) document.body.classList.add('study-nav-hidden');
 
-    profileBtn?.addEventListener('click', openProfile);
-    closeBtn?.addEventListener('click', closeProfile);
-    overlay?.addEventListener('click', (event) => { if (event.target === overlay) closeProfile(); });
-    hideBtn?.addEventListener('click', () => setNavHidden(true));
-    showBtn?.addEventListener('click', () => setNavHidden(false));
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeProfile(); });
+  document.getElementById('studyNavHideBtn')?.addEventListener('click', () => setNavHidden(true));
+  document.getElementById('studyNavShowBtn')?.addEventListener('click', () => setNavHidden(false));
 })();

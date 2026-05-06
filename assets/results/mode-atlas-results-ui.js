@@ -180,7 +180,7 @@ function renderRowPerformance(result, viewMode = "regular") {
         <div class="row-performance-section">
             <div class="row-performance-head">
                 <span>${title}</span>
-                <span style="color:var(--muted); font-size:12px;">Hover or click a row</span>
+                <span class="results-hover-hint">Hover or click a row</span>
             </div>
             <div class="row-doughnut-strip">
                 ${rows.map((row, index) => {

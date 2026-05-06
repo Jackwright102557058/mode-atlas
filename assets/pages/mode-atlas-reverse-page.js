@@ -1,38 +1,19 @@
-const DEFAULT_SETTINGS = {
-    focusWeak: false,
-    dakuten: false,
-    yoon: false,
-    extendedKatakana: false,
-    hint: false,
-    srs: true,
-    mobileMode: false,
+const DEFAULT_SETTINGS = createBaseTrainerDefaultSettings({
     keyboardMode: false,
     keyboardInputType: "kana",
-    endless: false,
-    timeTrial: false,
-    dailyChallenge: false,
-    testMode: false,
-    comboKana: false,
-    comboMode: "random",
-    choiceCount: 4,
-    hiraganaRows: Object.keys(hiraganaRows),
-    katakanaRows: [],
-    statsVisible: true,
-    scoresVisible: true,
-    activeBottomTab: null
-};
+    choiceCount: 4
+});
 
-let settings = { ...DEFAULT_SETTINGS, ...loadJSON("reverseSettings", DEFAULT_SETTINGS) };
+let settings = loadTrainerSettings("reverseSettings", DEFAULT_SETTINGS);
 
 normalizeLegacyRowSelection();
-settings.activeBottomTab = null;
 let stats = loadJSON("reverseCharStats", {});
 let times = loadJSON("reverseCharTimes", {});
 let srs = loadJSON("reverseCharSrs", {});
 
 let scoreHistory = normalizeScoreHistory(loadJSON("reverseScoreHistory", createDefaultScoreHistory()));
 let dailyChallengeHistory = loadJSON("reverseDailyChallengeHistory", {});
-let highScore = window.ModeAtlasStorage.number("reverseHighScore", 0);
+let highScore = loadNumber("reverseHighScore", 0);
 
 let charMap = {};
 let activeChars = [];
@@ -135,6 +116,27 @@ const startBtn = document.getElementById("startBtn");
 const startWrap = document.getElementById("startWrap");
 const sessionActionsEl = document.getElementById("sessionActions");
 const endSessionBtn = document.getElementById("endSessionBtn");
+
+function setSessionActionsVisible(visible = true) {
+    if (!sessionActionsEl) return;
+    setElementVisible(sessionActionsEl, !!visible);
+    sessionActionsEl.classList.toggle("is-active", !!visible);
+    document.body.classList.toggle("trainer-session-active", !!visible);
+}
+
+function setGameOverVisible(visible = true) {
+    if (!gameOverEl) return;
+    setElementVisible(gameOverEl, !!visible);
+    gameOverEl.classList.toggle("is-active", !!visible);
+}
+
+function setRetryButtonVisible(visible = true) {
+    if (!retryBtn) return;
+    setElementVisible(retryBtn, !!visible);
+    retryBtn.classList.toggle("is-active", !!visible);
+}
+
+
 const exportBtn = document.getElementById("exportBtn");
 const copySaveBtn = document.getElementById("copySaveBtn");
 const importBtn = document.getElementById("importBtn");
@@ -280,8 +282,8 @@ function applyDailyChallengeTheme() {
     document.body.classList.toggle("daily-challenge-active", dailyActive);
     document.body.classList.toggle("test-mode-active", testActive);
 
-    if (dailyBadgeEl) dailyBadgeEl.style.display = dailyActive ? "inline-block" : "none";
-    if (testBadgeEl) testBadgeEl.style.display = testActive ? "inline-block" : "none";
+    if (dailyBadgeEl) setElementVisible(dailyBadgeEl, dailyActive);
+    if (testBadgeEl) setElementVisible(testBadgeEl, testActive);
 
     if (dailyActive) {
         titleEl.textContent = "Writing Daily Challenge";
@@ -297,9 +299,9 @@ function applyDailyChallengeTheme() {
 
 function updateDailyChallengePills() {
     const active = isDailyChallengeSession() && sessionStarted;
-    dailyProgressPill.style.display = active ? "inline-block" : "none";
-    dailyCorrectPill.style.display = active ? "inline-block" : "none";
-    dailyWrongPill.style.display = active ? "inline-block" : "none";
+    setElementVisible(dailyProgressPill, active);
+    setElementVisible(dailyCorrectPill, active);
+    setElementVisible(dailyWrongPill, active);
 
     if (active) {
         dailyProgressEl.textContent = Math.min(dailyIndex + 1, 20);
@@ -308,13 +310,13 @@ function updateDailyChallengePills() {
     }
 
     const todayRecord = getTodayDailyRecord();
-    dailyOfficialPill.style.display = (active || todayRecord) ? "inline-block" : "none";
+    setElementVisible(dailyOfficialPill, (active || todayRecord));
     dailyOfficialEl.textContent = todayRecord ? `${todayRecord.officialScore}/${todayRecord.total}` : "—";
 
     const testActive = isTestModeSession() && sessionStarted;
-    testQuestionPill.style.display = testActive ? "inline-block" : "none";
-    testCorrectPill.style.display = testActive ? "inline-block" : "none";
-    testWrongPill.style.display = testActive ? "inline-block" : "none";
+    setElementVisible(testQuestionPill, testActive);
+    setElementVisible(testCorrectPill, testActive);
+    setElementVisible(testWrongPill, testActive);
 
     if (testActive) {
         testQuestionEl.textContent = Math.min(testIndex + 1, testSequence.length || 0);
@@ -346,8 +348,8 @@ function applyPanelStates() {
     const testModeForcesSixChoices = isTestModeSession();
     const effectiveKeyboardMode = settings.keyboardMode;
 
-    keyboardWrapEl.style.display = effectiveKeyboardMode ? "block" : "none";
-    choiceGridEl.style.display = effectiveKeyboardMode ? "none" : "grid";
+    setElementVisible(keyboardWrapEl, effectiveKeyboardMode);
+    setElementHidden(choiceGridEl, effectiveKeyboardMode);
 
     buttonsModeBtn.classList.toggle("btn-secondary", !effectiveKeyboardMode);
     keyboardModeBtn.classList.toggle("btn-secondary", effectiveKeyboardMode);
@@ -357,7 +359,7 @@ function applyPanelStates() {
     if (effectiveKeyboardMode) {
         choice4Btn.textContent = "Romaji Keyboard";
         choice6Btn.textContent = "Kana Keyboard";
-        choice8Btn.style.display = "none";
+        setElementHidden(choice8Btn, true);
 
         choice4Btn.classList.toggle("btn-secondary", settings.keyboardInputType === "romaji");
         choice6Btn.classList.toggle("btn-secondary", settings.keyboardInputType !== "romaji");
@@ -380,7 +382,7 @@ function applyPanelStates() {
         choice4Btn.textContent = "4 Choices";
         choice6Btn.textContent = testModeForcesSixChoices ? "6 Choices" : "6 Choices";
         choice8Btn.textContent = "8 Choices";
-        choice8Btn.style.display = "";
+        setElementVisible(choice8Btn, true);
 
         choice4Btn.classList.toggle("btn-secondary", settings.choiceCount === 4 && !testModeForcesSixChoices);
         choice6Btn.classList.toggle("btn-secondary", settings.choiceCount === 6 || testModeForcesSixChoices);
@@ -511,22 +513,22 @@ function renderDebugPanel() {
     }
 
     DEBUG_PANEL.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
-            <div style="font-size:13px;font-weight:800;letter-spacing:0.04em;">SRS Debug</div>
-            <button type="button" id="closeSrsDebugBtn" style="border:1px solid rgba(255,255,255,0.14);background:#1f1f1f;color:#f3f3f3;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px;">✕</button>
+        <div class="srs-debug-head">
+            <div class="srs-debug-title">SRS Debug</div>
+            <button type="button" id="closeSrsDebugBtn" class="srs-debug-close">✕</button>
         </div>
-        <div style="display:grid;gap:8px;">
-            <div><strong>Active kana:</strong> ${info.char} <span style="color:#bfbfbf;">(${info.romaji})</span></div>
-            <div><strong>Current prompt:</strong> <span style="color:#bfbfbf;">${currentPrompt || '—'}</span></div>
-            <div><strong>Session state:</strong> <span style="color:#bfbfbf;">started=${sessionStarted} · locked=${locked} · activeChars=${activeChars.length}</span></div>
-            <div><strong>Settings:</strong> <span style="color:#bfbfbf;">focusWeak=${settings.focusWeak} · srs=${settings.srs} · dakuten=${settings.dakuten} · yoon=${settings.yoon} · extendedKatakana=${settings.extendedKatakana} · mode=${settings.keyboardMode ? 'keyboard' : 'buttons'}</span></div>
-            <div style="padding:10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-                <div style="font-weight:800;margin-bottom:6px;">Weight breakdown</div>
-                ${Object.entries(info.parts).map(([k,v]) => `<div style="display:flex;justify-content:space-between;gap:8px;"><span>${k}</span><strong>${v}</strong></div>`).join('')}
-                <div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);"><span>finalWeight</span><strong>${info.total}</strong></div>
+        <div class="srs-debug-grid">
+            <div><strong>Active kana:</strong> ${info.char} <span class="srs-debug-muted">(${info.romaji})</span></div>
+            <div><strong>Current prompt:</strong> <span class="srs-debug-muted">${currentPrompt || '—'}</span></div>
+            <div><strong>Session state:</strong> <span class="srs-debug-muted">started=${sessionStarted} · locked=${locked} · activeChars=${activeChars.length}</span></div>
+            <div><strong>Settings:</strong> <span class="srs-debug-muted">focusWeak=${settings.focusWeak} · srs=${settings.srs} · dakuten=${settings.dakuten} · yoon=${settings.yoon} · extendedKatakana=${settings.extendedKatakana} · mode=${settings.keyboardMode ? 'keyboard' : 'buttons'}</span></div>
+            <div class="srs-debug-card">
+                <div class="srs-debug-card-title">Weight breakdown</div>
+                ${Object.entries(info.parts).map(([k,v]) => `<div class="srs-debug-row"><span>${k}</span><strong>${v}</strong></div>`).join('')}
+                <div class="srs-debug-row srs-debug-total"><span>finalWeight</span><strong>${info.total}</strong></div>
             </div>
-            <div style="padding:10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-                <div style="font-weight:800;margin-bottom:6px;">Kana save data</div>
+            <div class="srs-debug-card">
+                <div class="srs-debug-card-title">Kana save data</div>
                 <div>correct: <strong>${info.stats.correct}</strong></div>
                 <div>wrong: <strong>${info.stats.wrong}</strong></div>
                 <div>avgTime: <strong>${formatDuration(info.avgTime)}</strong></div>
@@ -535,8 +537,8 @@ function renderDebugPanel() {
                 <div>lastSeen ago: <strong>${info.lastSeenAgoMs === null ? 'never' : formatDuration(info.lastSeenAgoMs)}</strong></div>
                 <div>lastWrong ago: <strong>${info.lastWrongAgoMs === null ? 'never' : formatDuration(info.lastWrongAgoMs)}</strong></div>
             </div>
-            <div style="padding:10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-                <div style="font-weight:800;margin-bottom:6px;">Save snapshot</div>
+            <div class="srs-debug-card">
+                <div class="srs-debug-card-title">Save snapshot</div>
                 <div>stats keys: <strong>${Object.keys(stats).length}</strong></div>
                 <div>times keys: <strong>${Object.keys(times).length}</strong></div>
                 <div>srs keys: <strong>${Object.keys(srs).length}</strong></div>
@@ -669,9 +671,9 @@ function showIdleState() {
     choiceGridEl.innerHTML = "";
     inputEl.value = "";
     inputEl.disabled = true;
-    startWrap.style.display = "flex";
-    sessionActionsEl.style.display = "none";
-    gameOverEl.style.display = "none";
+    setElementVisible(startWrap, true);
+    setSessionActionsVisible(false);
+    setGameOverVisible(false);
     gameOverTitleEl.textContent = "Wrong";
     gameOverAnswerEl.textContent = "";
     setRetryButtonVisible(true);
@@ -997,7 +999,8 @@ function handleWrong() {
     } else {
         gameOverAnswerEl.textContent = `Correct answer: ${correctAnswer}`;
         flashResult(false, () => {
-            gameOverEl.style.display = "block";
+            setGameOverVisible(true);
+            setRetryButtonVisible(true);
             inputEl.disabled = true;
             for (const btn of choiceGridEl.querySelectorAll("button")) btn.disabled = true;
         });
@@ -1005,7 +1008,7 @@ function handleWrong() {
 }
 
 function handleChoiceAnswer(answer, clickedBtn) {
-    if (!sessionStarted || locked || settings.keyboardMode || gameOverEl.style.display === "block") return;
+    if (!sessionStarted || locked || settings.keyboardMode || isElementVisible(gameOverEl)) return;
     for (const btn of choiceGridEl.querySelectorAll("button")) btn.disabled = true;
 
     const acceptedAnswers = new Set(getAcceptedAnswersForCurrentChar());
@@ -1033,7 +1036,7 @@ inputEl.addEventListener("compositionend", () => {
 });
 
 inputEl.addEventListener("keydown", (event) => {
-    if (!sessionStarted || locked || !settings.keyboardMode || !isRomajiKeyboardMode() || gameOverEl.style.display === "block") return;
+    if (!sessionStarted || locked || !settings.keyboardMode || !isRomajiKeyboardMode() || isElementVisible(gameOverEl)) return;
     if (event.key !== "Enter" || keyboardIsComposing) return;
 
     event.preventDefault();
@@ -1048,7 +1051,7 @@ inputEl.addEventListener("keydown", (event) => {
 });
 
 inputEl.addEventListener("input", () => {
-    if (!sessionStarted || locked || !settings.keyboardMode || !isKanaKeyboardMode() || gameOverEl.style.display === "block") return;
+    if (!sessionStarted || locked || !settings.keyboardMode || !isKanaKeyboardMode() || isElementVisible(gameOverEl)) return;
 
     const value = inputEl.value.trim();
     if (!value) return;
@@ -1109,12 +1112,12 @@ function startSession() {
     updateTopStats();
     if (DEBUG_PANEL) renderDebugPanel();
 
-    gameOverEl.style.display = "none";
+    setGameOverVisible(false);
     gameOverTitleEl.textContent = "Wrong";
     locked = false;
     setRetryButtonVisible(false);
-    startWrap.style.display = "none";
-    sessionActionsEl.style.display = "flex";
+    setElementHidden(startWrap, true);
+    setSessionActionsVisible(true);
     inputEl.disabled = false;
 
     if (settings.timeTrial && !isDailyChallengeSession()) {
@@ -1123,7 +1126,7 @@ function startSession() {
         startTrialTimer(timeMinutes);
     } else {
         trialTarget = 0;
-        trialTimerPill.style.display = "none";
+        setElementHidden(trialTimerPill, true);
     }
 
     onSettingsChanged();
@@ -1182,10 +1185,10 @@ function endTestMode() {
     locked = false;
     stopTrialTimer();
     inputEl.disabled = true;
-    gameOverEl.style.display = "none";
+    setGameOverVisible(false);
     setRetryButtonVisible(true);
-    sessionActionsEl.style.display = "none";
-    startWrap.style.display = "flex";
+    setSessionActionsVisible(false);
+    setElementVisible(startWrap, true);
     clearHint();
     promptEl.textContent = "—";
     currentChar = "";
@@ -1203,8 +1206,8 @@ function endTestMode() {
         ["Test Time", formatDuration(durationMs)]
     ]);
 
-    sessionHardList.style.display = "none";
-    sessionEasyList.style.display = "none";
+    setElementHidden(sessionHardList, true);
+    setElementHidden(sessionEasyList, true);
     const modalTitle = sessionModalBackdrop.querySelector("h2");
     if (modalTitle) modalTitle.textContent = "Writing Test Complete";
     sessionModalBackdrop.classList.add("open");
@@ -1308,10 +1311,10 @@ function endDailyChallenge() {
     sessionStarted = false;
     sessionStats.active = false;
     inputEl.disabled = true;
-    gameOverEl.style.display = "block";
+    setGameOverVisible(true);
     setRetryButtonVisible(false);
-    sessionActionsEl.style.display = "none";
-    startWrap.style.display = "flex";
+    setSessionActionsVisible(false);
+    setElementVisible(startWrap, true);
     clearHint();
     hideComboTierNotice();
     currentChar = "";
@@ -1372,9 +1375,9 @@ function endSession(autoEnded = false) {
     updateBestScores();
 
     inputEl.disabled = true;
-    gameOverEl.style.display = "none";
-    sessionActionsEl.style.display = "none";
-    startWrap.style.display = "flex";
+    setGameOverVisible(false);
+    setSessionActionsVisible(false);
+    setElementVisible(startWrap, true);
     clearHint();
     promptEl.textContent = "—";
     currentChar = "";
@@ -1554,7 +1557,7 @@ function applyImportedData(payload) {
 }
 
 retryBtn.addEventListener("click", () => {
-    gameOverEl.style.display = "none";
+    setGameOverVisible(false);
     gameOverAnswerEl.textContent = "";
 
     if (sessionStarted) {
@@ -1702,7 +1705,7 @@ if (resetBtn) resetBtn.addEventListener("click", () => {
 
     sessionModalBackdrop.classList.remove("open");
     importModalBackdrop.classList.remove("open");
-    gameOverEl.style.display = "none";
+    setGameOverVisible(false);
     showIdleState();
     onSettingsChanged();
 });
@@ -1749,7 +1752,7 @@ function refreshSaveBackedStateFromCloud() {
     srs = loadJSON("reverseCharSrs", {});
     scoreHistory = normalizeScoreHistory(loadJSON("reverseScoreHistory", createDefaultScoreHistory()));
     dailyChallengeHistory = loadJSON("reverseDailyChallengeHistory", {});
-    highScore = window.ModeAtlasStorage.number("reverseHighScore", 0);
+    highScore = loadNumber("reverseHighScore", 0);
     if (!Array.isArray(settings.hiraganaRows)) settings.hiraganaRows = Object.keys(hiraganaRows);
     if (!Array.isArray(settings.katakanaRows)) settings.katakanaRows = [];
     if (!["same_row", "random"].includes(settings.comboMode)) settings.comboMode = "random";
@@ -1809,7 +1812,7 @@ function hasWritingLocalDataForPage() {
             if (typeof value === "object") return Object.values(value).some(deep);
             return false;
         };
-        return window.ModeAtlasStorage.number("reverseHighScore", 0) > 0
+        return loadNumber("reverseHighScore", 0) > 0
             || deep(loadJSON("reverseCharStats", {}))
             || deep(loadJSON("reverseCharTimes", {}))
             || deep(loadJSON("reverseScoreHistory", {}))

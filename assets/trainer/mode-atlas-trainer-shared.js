@@ -16,11 +16,74 @@ function createEmptySessionStats() {
 
 function loadJSON(key, fallback) {
     try {
-        return window.ModeAtlasStorage.json(key, fallback);
+        if (window.ModeAtlasStorage?.json) return window.ModeAtlasStorage.json(key, fallback);
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
     } catch {
         return fallback;
     }
 }
+
+function loadNumber(key, fallback = 0) {
+    try {
+        if (window.ModeAtlasStorage?.number) return window.ModeAtlasStorage.number(key, fallback);
+        const value = Number(localStorage.getItem(key));
+        return Number.isFinite(value) ? value : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+
+
+function createBaseTrainerDefaultSettings(overrides = {}) {
+    return {
+        focusWeak: false,
+        dakuten: false,
+        yoon: false,
+        extendedKatakana: false,
+        hint: false,
+        srs: true,
+        mobileMode: false,
+        endless: false,
+        timeTrial: false,
+        dailyChallenge: false,
+        testMode: false,
+        comboKana: false,
+        comboMode: "random",
+        hiraganaRows: Object.keys(hiraganaRows),
+        katakanaRows: [],
+        statsVisible: true,
+        scoresVisible: true,
+        activeBottomTab: null,
+        ...overrides
+    };
+}
+
+function loadTrainerSettings(storageKey, defaults) {
+    const loaded = loadJSON(storageKey, defaults);
+    return { ...defaults, ...loaded, activeBottomTab: null };
+}
+
+function setElementHidden(el, hidden = true) {
+    if (!el) return;
+    if (hidden) {
+        el.hidden = true;
+        el.setAttribute("hidden", "");
+    } else {
+        el.hidden = false;
+        el.removeAttribute("hidden");
+    }
+}
+
+function setElementVisible(el, visible = true) {
+    setElementHidden(el, !visible);
+}
+
+function isElementVisible(el) {
+    return !!el && !el.hidden && !el.hasAttribute("hidden");
+}
+
 
 function formatDuration(ms) {
     if (!Number.isFinite(ms) || ms <= 0) return "0 ms";
@@ -73,9 +136,6 @@ function normalizeScoreHistory(data) {
     };
 }
 
-function setRetryButtonVisible(visible) {
-    retryBtn.style.display = visible ? "inline-block" : "none";
-}
 
 function rebuildCharMap() {
     charMap = {};
@@ -230,11 +290,11 @@ function updateTopStats() {
     endlessWrongEl.textContent = endlessRunWrong;
 
     const showContinuous = (settings.endless || settings.timeTrial) && sessionStarted && !isDailyChallengeSession();
-    endlessTotalPill.style.display = showContinuous ? "inline-block" : "none";
-    endlessWrongPill.style.display = showContinuous ? "inline-block" : "none";
+    setElementVisible(endlessTotalPill, showContinuous);
+    setElementVisible(endlessWrongPill, showContinuous);
 
     const showTrial = settings.timeTrial && sessionStarted && !isDailyChallengeSession();
-    trialTimerPill.style.display = showTrial ? "inline-block" : "none";
+    setElementVisible(trialTimerPill, showTrial);
 
     updateDailyChallengePills();
     applyDailyChallengeTheme();
@@ -264,8 +324,8 @@ function renderScoreHistory() {
 }
 
 function updateTrialConfigVisibility() {
-    trialConfigEl.style.display = settings.timeTrial && !settings.dailyChallenge && !settings.testMode ? "flex" : "none";
-    comboConfigEl.style.display = settings.comboKana && !settings.dailyChallenge && !settings.testMode ? "flex" : "none";
+    setElementVisible(trialConfigEl, settings.timeTrial && !settings.dailyChallenge && !settings.testMode);
+    setElementVisible(comboConfigEl, settings.comboKana && !settings.dailyChallenge && !settings.testMode);
     comboSameRowBtn.classList.toggle("active", settings.comboMode === "same_row");
     comboRandomBtn.classList.toggle("active", settings.comboMode === "random");
     comboSameRowBtn.classList.remove("btn-secondary");
@@ -432,7 +492,7 @@ function showPopupForChar(ch, e) {
         <div>SRS level: ${sr.level}</div>
     `;
 
-    popupEl.style.display = "block";
+    setElementVisible(popupEl, true);
 
     if (settings.mobileMode) {
         popupEl.style.left = "50%";
@@ -519,7 +579,7 @@ function renderHeatmap() {
 }
 
 function closePopup() {
-    popupEl.style.display = "none";
+    setElementHidden(popupEl, true);
 }
 
 function getEligiblePool() {
@@ -581,7 +641,7 @@ function showComboTierNotice(length) {
 function startTrialTimer(durationMinutes) {
     stopTrialTimer();
     trialEndTime = Date.now() + durationMinutes * 60 * 1000;
-    trialTimerPill.style.display = "inline-block";
+    setElementVisible(trialTimerPill, true);
 
     const tick = () => {
         const remaining = Math.max(0, trialEndTime - Date.now());
@@ -601,7 +661,7 @@ function stopTrialTimer() {
         clearInterval(trialTimerId);
         trialTimerId = null;
     }
-    trialTimerPill.style.display = "none";
+    setElementHidden(trialTimerPill, true);
 }
 
 function updateAverageTime(char, timeTaken) {
@@ -728,12 +788,12 @@ function getSessionDifficultyLists() {
 
 function renderSessionList(container, title, items) {
     if (!items.length) {
-        container.style.display = "none";
+        setElementHidden(container, true);
         container.innerHTML = "";
         return;
     }
 
-    container.style.display = "block";
+    setElementVisible(container, true);
     container.innerHTML =
         `<h3>${title}</h3>` +
         items.map(item => `

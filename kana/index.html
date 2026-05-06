@@ -25,28 +25,16 @@
 <meta property="og:url" content="https://mode-atlas.app/kana/" />
   <meta property="og:image" content="https://mode-atlas.app/assets/social-preview.svg" />
 <meta name="twitter:card" content="summary" />
-
-<link rel="stylesheet" href="../assets/css/mode-atlas-kana-page.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-page-shared.css">
 <link rel="stylesheet" href="../assets/css/mode-atlas-app-polish.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-kana-dashboard.css" />
-<link rel="stylesheet" href="../assets/css/mode-atlas-results-insights.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-dev-console.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-app-modals.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-profile-settings.css" />
 <link rel="stylesheet" href="../assets/css/mode-atlas-achievements.css" />
 <link rel="stylesheet" href="../assets/css/mode-atlas-theme.css" />
-<script defer src="../assets/app/mode-atlas-toast.js"></script>
-<script defer src="../assets/app/mode-atlas-theme.js"></script>
-<script defer src="../assets/app/mode-atlas-save-repair.js"></script>
-<script defer src="../assets/app/mode-atlas-page-state.js"></script>
-<script defer src="../assets/app/mode-atlas-dev-console.js"></script>
-<script defer src="../assets/app/mode-atlas-pwa.js"></script>
-<script defer src="../assets/app/mode-atlas-about.js"></script>
-<script defer src="../assets/app/mode-atlas-kana-metrics.js"></script>
-<script defer src="../assets/pages/mode-atlas-kana-dashboard.js"></script>
-<script defer src="../assets/results/mode-atlas-results-insights.js"></script>
-<script defer src="../assets/app/mode-atlas-confusable-mode.js"></script>
-<script src="../assets/app/mode-atlas-storage.js"></script>
-<script src="../assets/app/mode-atlas-presets.js"></script>
+<link rel="stylesheet" href="../assets/css/mode-atlas-responsive.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-kana-dashboard.css" />
+<link rel="stylesheet" href="../assets/css/mode-atlas-kana-page.css">
 </head>
 <body><script src="../assets/app/mode-atlas-early-loader.js"></script><div class="ma-loading-screen" id="maLoadingScreen" aria-live="polite"><div class="ma-loading-card"><div class="ma-loading-head"><div class="ma-loading-mark">学</div><div><div class="ma-loading-title">Mode Atlas</div><div class="ma-loading-sub">Preparing your study space…</div></div></div><div class="ma-skeleton"></div><div class="ma-skeleton"></div><div class="ma-skeleton short"></div></div></div>
 <div class="shell">
@@ -115,7 +103,7 @@
                     </a>
                 </div>
 
-                <div class="footer-note" style="text-align:left; margin-top:6px;">Kana Trainer Home · v<span data-ma-app-version></span></div>
+                <div class="footer-note kana-footer-note-left">Kana Trainer Home · v<span data-ma-app-version></span></div>
             </div>
 
             <div class="hero-side">
@@ -138,10 +126,10 @@
                     <div class="hero-note" id="heroStatusText">No daily challenge data yet.</div>
                 </div>
 
-                <a class="launch-card" href="../results/" style="padding:14px; font-size:14px; background:linear-gradient(180deg, rgba(203,163,74,0.18), rgba(20,20,20,0.96)); border-color: rgba(203,163,74,0.35);">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:700;">Test Results</span>
-                        <span style="opacity:0.8;">→</span>
+                <a class="launch-card results-launch-card" href="../results/">
+                    <div class="kana-inline-between">
+                        <span class="kana-strong-label">Test Results</span>
+                        <span class="kana-soft-label">→</span>
                     </div>
                 </a>
             </div>
@@ -202,7 +190,7 @@
                 <div class="card-head">
                     <div>
                         <div class="comparison-title">Learning pulse</div>
-                        <h2 class="card-title" style="margin-top:10px;">Reading vs Writing progress</h2>
+                        <h2 class="card-title kana-card-title-offset">Reading vs Writing progress</h2>
                         <div class="card-sub">See how your reading and writing skills compare at a glance.</div>
                     </div>
                     <div class="accent gold"></div>
@@ -239,7 +227,7 @@
                     <div class="accent green"></div>
                 </div>
                 <div class="summary-rows" id="readingTodaySummary"></div>
-                <div style="height:14px;"></div>
+                <div class="ma-spacer-sm"></div>
                 <div class="timeline" id="readingTimeline"></div>
             </div>
 
@@ -251,7 +239,7 @@
                     <div class="accent blue"></div>
                 </div>
                 <div class="summary-rows" id="writingTodaySummary"></div>
-                <div style="height:14px;"></div>
+                <div class="ma-spacer-sm"></div>
                 <div class="timeline" id="writingTimeline"></div>
             </div>
         </section>
@@ -259,29 +247,30 @@
 
     <div class="footer-note">Your home dashboard reads from the same local save data as Reading Practice and Writing Practice.</div>
 </div>
-
-
+<script src="../assets/app/mode-atlas-toast.js"></script>
+<script src="../assets/app/mode-atlas-theme.js"></script>
+<script src="../assets/app/mode-atlas-display-mode.js"></script>
+<script src="../assets/app/mode-atlas-storage.js"></script>
+<script src="../assets/app/mode-atlas-save-repair.js"></script>
+<script src="../assets/app/mode-atlas-page-state.js"></script>
+<script src="../assets/app/mode-atlas-dev-console.js"></script>
+<script src="../assets/app/mode-atlas-pwa.js"></script>
+<script src="../assets/app/mode-atlas-about.js"></script>
+<script src="../assets/app/mode-atlas-loader.js"></script>
+<script src="../assets/app/mode-atlas-visit-flows.js"></script>
+<script src="../assets/app/mode-atlas-import-export.js"></script>
+<script src="../assets/achievements/mode-atlas-achievements-ui.js"></script>
+<script src="../assets/app/mode-atlas-presets.js"></script>
+<script src="../assets/app/mode-atlas-kana-metrics.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../cloud-sync.js"></script>
 <script src="../assets/ui/mode-atlas-profile-menu.js"></script>
 <script src="../assets/ui/mode-atlas-settings-menu.js"></script>
 <script src="../assets/ui/mode-atlas-profile-drawer-bindings.js"></script>
-
 <script src="../assets/pages/mode-atlas-kana-page.js"></script>
-
-
-
-
-
-
-
-
-
+<script src="../assets/pages/mode-atlas-kana-dashboard.js"></script>
+<script src="../assets/app/mode-atlas-confusable-mode.js"></script>
 <script src="../assets/ui/mode-atlas-verified-preset-confusable.js"></script>
-
-
-<script src="../assets/pages/mode-atlas-kana-dashboard-fallback.js"></script>
-<script src="../assets/app/mode-atlas-app-runtime.js"></script>
 <script src="../assets/app/mode-atlas-sounds.js"></script>
 </body>
 </html>

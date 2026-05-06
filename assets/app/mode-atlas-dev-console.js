@@ -104,7 +104,7 @@
       backdrop.className = 'ma-dev-backdrop';
       document.body.appendChild(backdrop);
     }
-    backdrop.innerHTML = '<div class="ma-dev-modal"><div class="ma-dev-head"><h2>Mode Atlas Dev Diagnostics</h2><button class="ma-ui-btn" type="button" data-ma-dev-close>Close</button></div><div class="ma-dev-actions"><button class="ma-ui-btn" data-ma-dev-copy>Copy diagnostics</button><button class="ma-ui-btn" data-ma-dev-repair>Repair save data</button><button class="ma-ui-btn" data-ma-dev-sync>Force sync</button><button class="ma-ui-btn" data-ma-dev-safe>Safe mode reload</button></div><div class="ma-dev-table">' + Object.entries(data).map(([key, value]) => '<div class="ma-dev-row"><div class="ma-dev-key">' + escapeHTML(key) + '</div><div class="ma-dev-val">' + escapeHTML(String(value)) + '</div></div>').join('') + '</div></div>';
+    backdrop.innerHTML = '<div class="ma-dev-modal"><div class="ma-dev-head"><h2>Mode Atlas Dev Diagnostics</h2><button class="ma-ui-btn" type="button" data-ma-dev-close>Close</button></div><div class="ma-dev-actions"><button class="ma-ui-btn" data-ma-dev-copy>Copy diagnostics</button><button class="ma-ui-btn" data-ma-dev-repair>Repair save data</button><button class="ma-ui-btn" data-ma-dev-sync>Force sync</button><button class="ma-ui-btn" data-ma-dev-safe>Safe mode reload</button><button class="ma-ui-btn" data-ma-dev-test-sound>Test sound</button></div><div class="ma-dev-table">' + Object.entries(data).map(([key, value]) => '<div class="ma-dev-row"><div class="ma-dev-key">' + escapeHTML(key) + '</div><div class="ma-dev-val">' + escapeHTML(String(value)) + '</div></div>').join('') + '</div></div>';
     backdrop.classList.add('open');
     backdrop.onclick = event => {
       if (event.target === backdrop || event.target.closest('[data-ma-dev-close]')) backdrop.classList.remove('open');
@@ -120,6 +120,9 @@
       if (event.target.closest('[data-ma-dev-safe]')) {
         sessionStorage.setItem('modeAtlasSafeMode', '1');
         location.reload();
+      }
+      if (event.target.closest('[data-ma-dev-test-sound]')) {
+        window.ModeAtlasSounds?.testSound?.();
       }
     };
   }

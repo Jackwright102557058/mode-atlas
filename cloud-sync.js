@@ -723,6 +723,12 @@ function emitStatus() {
   try { window.dispatchEvent(new CustomEvent('kanaCloudSyncStatusChanged', { detail: getSyncStatus() })); } catch {}
 }
 
+
+function setCloudElementVisible(el, visible = true) {
+  if (!el) return;
+  el.hidden = !visible;
+}
+
 function updateUiBinding(binding) {
   const user = currentUser;
   if (binding.statusEl) binding.statusEl.textContent = binding.customStatus || lastStatus;
@@ -732,64 +738,19 @@ function updateUiBinding(binding) {
     if (user?.photoURL) {
       binding.photoEl.src = user.photoURL;
       binding.photoEl.alt = user.displayName || 'Google profile';
-      binding.photoEl.style.display = 'block';
+      setCloudElementVisible(binding.photoEl, true);
     } else {
       binding.photoEl.removeAttribute('src');
       binding.photoEl.alt = '';
-      binding.photoEl.style.display = binding.hidePhotoIfNoUser ? 'none' : 'block';
+      setCloudElementVisible(binding.photoEl, !binding.hidePhotoIfNoUser);
     }
   }
-  if (binding.signInBtn) binding.signInBtn.style.display = user ? 'none' : 'inline-flex';
-  if (binding.signOutBtn) binding.signOutBtn.style.display = user ? 'inline-flex' : 'none';
-  if (binding.signedInEls) binding.signedInEls.forEach((el) => { el.style.display = user ? '' : 'none'; });
-  if (binding.signedOutEls) binding.signedOutEls.forEach((el) => { el.style.display = user ? 'none' : ''; });
-  syncGlobalProfileAuthButtons();
+  if (binding.signInBtn) setCloudElementVisible(binding.signInBtn, !user);
+  if (binding.signOutBtn) setCloudElementVisible(binding.signOutBtn, !!user);
+  if (binding.signedInEls) binding.signedInEls.forEach((el) => setCloudElementVisible(el, !!user));
+  if (binding.signedOutEls) binding.signedOutEls.forEach((el) => setCloudElementVisible(el, !user));
 }
 
-
-function syncGlobalProfileAuthButtons() {
-  const user = currentUser;
-  const signedIn = !!user;
-  const setShown = (el, show) => {
-    if (!el) return;
-    const desiredDisplay = show ? 'inline-flex' : 'none';
-    if (el.hidden === !show && el.style.display === desiredDisplay && el.getAttribute('aria-hidden') === (show ? 'false' : 'true')) return;
-    el.hidden = !show;
-    if (show) {
-      el.style.removeProperty('display');
-      const tag = (el.tagName || '').toLowerCase();
-      if (tag === 'button' || tag === 'a') el.style.display = 'inline-flex';
-    } else {
-      el.style.setProperty('display', 'none', 'important');
-    }
-    el.setAttribute('aria-hidden', show ? 'false' : 'true');
-  };
-  const all = (sel) => Array.from(document.querySelectorAll(sel));
-  all('#profileSignInBtn,#studyProfileSignIn,#identitySignInBtn,[data-profile-sign-in]').forEach((el) => setShown(el, !signedIn));
-  all('#profileSignOutBtn,#studyProfileSignOut,#identitySignOutBtn,[data-profile-sign-out]').forEach((el) => setShown(el, signedIn));
-  const displayName = user?.displayName || user?.email || 'Guest';
-  const emailText = user?.email || (CONFIG_READY ? 'Not signed in' : 'Firebase config missing');
-  all('#profileName,#drawerName,#studyProfileName,#identityName').forEach((el) => { el.textContent = displayName; });
-  all('#profileEmail,#drawerEmail,#studyProfileEmail,#identityEmail').forEach((el) => { el.textContent = emailText; });
-  all('#profileStatus,#studyProfileStatus,#identityStatus').forEach((el) => { if (!el.dataset.customStatus) el.textContent = statusText(); });
-}
-
-let profileAuthButtonObserver = null;
-let profileAuthSyncQueued = false;
-function queueProfileAuthButtonSync() {
-  if (profileAuthSyncQueued) return;
-  profileAuthSyncQueued = true;
-  setTimeout(() => { profileAuthSyncQueued = false; syncGlobalProfileAuthButtons(); }, 60);
-}
-function startProfileAuthButtonGuard() {
-  try {
-    syncGlobalProfileAuthButtons();
-    if (profileAuthButtonObserver) return;
-    profileAuthButtonObserver = new MutationObserver(queueProfileAuthButtonSync);
-    profileAuthButtonObserver.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'hidden', 'class'] });
-    setInterval(syncGlobalProfileAuthButtons, 1500);
-  } catch {}
-}
 
 function bindUi(options = {}) {
   const binding = {
@@ -1248,8 +1209,6 @@ setupFirebase().catch((error) => {
 try {
   window.addEventListener('online', () => { emitStatus(); if (currentUser) scheduleSync(200); });
   window.addEventListener('offline', () => setCloudState(false, 'Browser is offline'));
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startProfileAuthButtonGuard, { once: true });
-  else startProfileAuthButtonGuard();
 } catch {}
 
 

@@ -1,5 +1,5 @@
-/* Mode Atlas stable trainer controls: final owner for presets + modifier toggles. */
-(function ModeAtlasStableControls(){
+/* Mode Atlas trainer controls. Owns trainer modifier click handling, preset application, and active control state. */
+(function ModeAtlasTrainerControlsModule(){
   const resolvedPage=(window.ModeAtlasPageName ? window.ModeAtlasPageName() : (location.pathname.split('/').pop()||'')).toLowerCase();
   function isTrainerDocument(){
     return resolvedPage==='default.html' || resolvedPage==='reverse.html' ||
@@ -7,8 +7,8 @@
       document.body?.classList?.contains('ma-reading-page') ||
       document.body?.classList?.contains('ma-writing-page');
   }
-  if(window.__modeAtlasStableControlsLoaded) return;
-  window.__modeAtlasStableControlsLoaded=true;
+  if(window.__modeAtlasTrainerControlsLoaded) return;
+  window.__modeAtlasTrainerControlsLoaded=true;
 
   const isWriting=resolvedPage==='reverse.html' || document.body?.classList?.contains('ma-writing-page') || /\/writing\/?$/i.test(location.pathname || '');
   const storeKey=isWriting?'reverseSettings':'settings';
@@ -137,6 +137,7 @@
     saveAndRefresh();
   }
   function labelToKey(label){
+    if (label && typeof label === 'object' && label.dataset?.maControlKey) return label.dataset.maControlKey;
     const n=String(label||'').toLowerCase().replace(/[\s\u00a0]+/g,' ').trim();
     if(n==='hint mode'||n==='hint')return'hint';
     if(n==='srs mode'||n==='srs')return'srs';
@@ -175,7 +176,7 @@
       toggleRow(rowContainer,key,rowContainer.id==='rowOptions'?'hiraganaRows':'katakanaRows');return;
     }
     if(btn.closest('#modifierOptions')){
-      const key=labelToKey(btn.textContent); if(!key) return;
+      const key=labelToKey(btn); if(!key) return;
       e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();toggleMode(key);return;
     }
   }
@@ -188,7 +189,7 @@
       btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',on?'true':'false');
     });
     document.querySelectorAll('#modifierOptions .toggle-btn,#modifierOptions button').forEach(btn=>{
-      const key=labelToKey(btn.textContent); if(!key) return;
+      const key=labelToKey(btn); if(!key) return;
       const on=!!s[key]; btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',on?'true':'false');
     });
     document.querySelectorAll('#rowOptions .toggle-btn,#rowOptions button,#katakanaRowOptions .toggle-btn,#katakanaRowOptions button').forEach(btn=>{

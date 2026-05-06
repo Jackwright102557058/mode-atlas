@@ -27,11 +27,11 @@
   function get(key, fallback = '') {
     try { const value = localStorage.getItem(key); return value == null ? fallback : value; } catch { return fallback; }
   }
-  function set(key, value) { try { localStorage.setItem(key, String(value)); return true; } catch { return false; } }
+  function set(key, value) { try { localStorage.setItem(key, String(value)); markUpdatedForKey(key); return true; } catch { return false; } }
   function remove(key) { try { localStorage.removeItem(key); return true; } catch { return false; } }
   function has(key) { try { return localStorage.getItem(key) !== null; } catch { return false; } }
   function json(key, fallback) { return safeParse(get(key, null), fallback); }
-  function setJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } }
+  function setJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); markUpdatedForKey(key); return true; } catch { return false; } }
   function number(key, fallback = 0) { const n = Number(get(key, '')); return Number.isFinite(n) ? n : fallback; }
   function now(key) { const ts = String(Date.now()); set(key, ts); return ts; }
   function removeMany(keys) { (keys || []).forEach(remove); }
@@ -48,25 +48,14 @@
     } catch {}
     return out;
   }
+  function markUpdatedForKey(key) {
+    const name = String(key || '');
+    if (/^(settings|reverseSettings|modeAtlasThemePreference|modeAtlasDisplayMode|modeAtlasSoundMode)$/.test(name)) return now('settingsUpdatedAt');
+    if (/(testModeResults|charStats|reverseCharStats|charTimes|reverseCharTimes|scoreHistory)/.test(name)) return now('resultsUpdatedAt');
+    if (/(charSrs|reverseCharSrs)/.test(name)) return now('srsUpdatedAt');
+    if (/dailyChallengeHistory/.test(name)) return now('dailyUpdatedAt');
+    return '';
+  }
 
-  window.ModeAtlasStorage = Object.freeze({ KEYS, safeParse, get, set, remove, has, json, setJSON, number, now, removeMany, collect, apply, snapshot });
-})();
-
-/* Section timestamp maintenance for direct localStorage writes. */
-(function(){
-  if(Storage.prototype.__maTimestampPatched) return;
-  const nativeSet = Storage.prototype.setItem;
-  Storage.prototype.setItem = function(key, value){
-    const out = nativeSet.apply(this, arguments);
-    try{
-      if(this === localStorage){
-        if(/^(settings|reverseSettings|modeAtlasThemePreference|modeAtlasDisplayMode|modeAtlasSoundMode)$/.test(key)) nativeSet.call(localStorage,'settingsUpdatedAt',String(Date.now()));
-        if(/(testModeResults|charStats|reverseCharStats|charTimes|reverseCharTimes|scoreHistory)/.test(key)) nativeSet.call(localStorage,'resultsUpdatedAt',String(Date.now()));
-        if(/(charSrs|reverseCharSrs)/.test(key)) nativeSet.call(localStorage,'srsUpdatedAt',String(Date.now()));
-        if(/dailyChallengeHistory/.test(key)) nativeSet.call(localStorage,'dailyUpdatedAt',String(Date.now()));
-      }
-    }catch{}
-    return out;
-  };
-  Storage.prototype.__maTimestampPatched = true;
+  window.ModeAtlasStorage = Object.freeze({ KEYS, safeParse, get, set, remove, has, json, setJSON, number, now, removeMany, collect, apply, snapshot, markUpdatedForKey });
 })();

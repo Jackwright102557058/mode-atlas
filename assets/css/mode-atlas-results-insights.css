@@ -9,3 +9,8 @@
 .ma-mini-result-card span{font-size:12px;color:var(--ma-muted,#9aa6bd);}
 @media(max-width:980px){.ma-compact-results{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:620px){.ma-compact-results{grid-template-columns:1fr;}}
+
+.results-hover-hint {
+  color: var(--muted);
+  font-size: 12px;
+}

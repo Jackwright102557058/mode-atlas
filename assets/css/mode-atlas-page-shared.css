@@ -1060,3 +1060,38 @@ body[data-effective-display-mode="phone"] .results-layout,
 body[data-effective-display-mode="phone"] .hero-grid {
   grid-template-columns: 1fr !important;
 }
+
+
+/* Shared visibility and small layout utilities used by static HTML.
+   These replace inline style attributes and give JS one class/hidden hook to target. */
+.ma-hidden,
+[hidden] {
+  display: none !important;
+}
+
+.ma-actions-row {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ma-muted-copy {
+  color: #ccc;
+  margin-top: 0;
+}
+
+.ma-file-input {
+  display: none;
+}
+
+.ma-spacer-sm {
+  height: 14px;
+}
+
+.ma-divider-soft {
+  border: none;
+  border-top: 1px solid rgba(148,163,184,0.12);
+  margin: 20px 0;
+}
+
